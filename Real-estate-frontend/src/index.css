@@ -129,3 +129,32 @@
     transform: translate(40px, -30px) scale(1.15);
   }
 }
+
+/* Responsive mobile view adjustments for the admin dashboard and pages */
+@media (max-width: 640px) {
+  /* Restrict outer card/table box paddings to exactly 2 (0.5rem / 8px) to maximize screen real estate on mobile */
+  .shadow-premium {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+    border-radius: 0.75rem !important;
+  }
+
+  /* Reduce table headers and cells padding to fit more text on small screens */
+  th, td {
+    padding-left: 0.35rem !important;
+    padding-right: 0.35rem !important;
+  }
+
+  /* Make form grids fit better on small mobile viewports */
+  .grid-cols-1, .grid-cols-2, .grid-cols-3, .grid-cols-4, .grid-cols-5 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Adjust inputs for proper touch targets and sizing on mobile */
+  input, select, textarea, button {
+    font-size: 13px !important;
+  }
+}

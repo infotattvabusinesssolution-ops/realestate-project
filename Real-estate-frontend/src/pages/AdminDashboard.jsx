@@ -103,6 +103,13 @@ export default function AdminDashboard() {
   const [paymentGatewaysExpanded, setPaymentGatewaysExpanded] = useState(false);
   const [adminManagementExpanded, setAdminManagementExpanded] = useState(false);
 
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    if (window.innerWidth < 640) {
+      setSidebarOpen(false);
+    }
+  };
+
   // Authentication check
   useEffect(() => {
     if (!loading && (!token || (user && user.role !== 'admin'))) {
@@ -462,6 +469,14 @@ export default function AdminDashboard() {
               onClick={() => setProfileExpanded(!profileExpanded)}
             />
           </div>
+
+          {/* Mobile Sidebar Toggle Button (visible only on mobile) */}
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="sm:hidden w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center justify-center active:scale-95 border border-slate-100"
+          >
+            <Menu size={16} />
+          </button>
         </div>
       </header>
 
@@ -472,7 +487,7 @@ export default function AdminDashboard() {
         {!sidebarOpen && (
           <button 
             onClick={() => setSidebarOpen(true)}
-            className="absolute top-4 left-4 z-50 p-2.5 bg-white text-slate-600 hover:text-slate-900 rounded-xl border border-slate-150 shadow-md hover:shadow-lg transition active:scale-95 animate-in fade-in zoom-in duration-200"
+            className="hidden sm:block absolute top-4 left-4 z-50 p-2.5 bg-white text-slate-600 hover:text-slate-900 rounded-xl border border-slate-150 shadow-md hover:shadow-lg transition active:scale-95 animate-in fade-in zoom-in duration-200"
           >
             <Menu size={16} />
           </button>
@@ -658,7 +673,7 @@ export default function AdminDashboard() {
                           return (
                             <button
                               key={sub.id}
-                              onClick={() => setActiveTab(sub.id)}
+                              onClick={() => handleTabClick(sub.id)}
                               className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-[11px] font-bold text-left transition ${
                                 isSubActive 
                                   ? 'bg-blue-50 text-blue-600' 
@@ -683,7 +698,7 @@ export default function AdminDashboard() {
                     if (item.id === 'home-page') {
                       navigate('/');
                     } else {
-                      setActiveTab(item.id);
+                      handleTabClick(item.id);
                     }
                   }}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${
@@ -712,8 +727,8 @@ export default function AdminDashboard() {
         {/* 3. Main Content Panel Area */}
         <main className={`flex-1 overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ${
           sidebarOpen 
-            ? 'p-6 lg:p-10' 
-            : 'pt-6 pb-6 pr-6 pl-16 lg:pt-10 lg:pb-10 lg:pr-10 lg:pl-24'
+            ? 'py-6 px-2 sm:px-6 lg:p-10' 
+            : 'py-6 px-2 sm:pr-6 sm:pl-16 lg:pt-10 lg:pb-10 lg:pr-10 lg:pl-24'
         } space-y-8`}>
           
           {/* TAB 1: DASHBOARD VIEW (Matching the user's screenshot exactly!) */}
