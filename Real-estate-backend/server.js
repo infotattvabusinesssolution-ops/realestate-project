@@ -29,7 +29,11 @@ const app = express();
 const server = http.createServer(app);
 
 // Configure CORS
-const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const corsOriginSetting = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const corsOrigin = corsOriginSetting.includes(',')
+  ? corsOriginSetting.split(',').map((origin) => origin.trim())
+  : corsOriginSetting;
+
 app.use(
   cors({
     origin: corsOrigin,
