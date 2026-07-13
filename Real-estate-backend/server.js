@@ -19,6 +19,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import subscriberRoutes from './routes/subscriberRoutes.js';
 import gatewayRoutes from './routes/gatewayRoutes.js';
 import languageRoutes from './routes/languageRoutes.js';
+import publicPackageRoutes from './routes/publicPackageRoutes.js';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use('/api/admin/payments', paymentRoutes);
 app.use('/api/admin/subscribers', subscriberRoutes);
 app.use('/api/admin/gateways', gatewayRoutes);
 app.use('/api/admin/languages', languageRoutes);
+app.use('/api/packages', publicPackageRoutes);
 
 // Test Endpoint
 app.get('/', (req, res) => {

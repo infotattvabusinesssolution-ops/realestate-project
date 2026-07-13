@@ -96,8 +96,12 @@ export default function VendorDashboard() {
   };
 
   const handleDeleteProperty = async (id) => {
-    // For demo/simplicity, filter local state. If backend endpoint exists, call it.
-    setPropertiesList(propertiesList.filter(p => p.id !== id));
+    try {
+      await axiosInstance.delete(`/vendor/properties/${id}`);
+      setPropertiesList(propertiesList.filter(p => p.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete property');
+    }
   };
 
   const handleAddProject = async (proj) => {
@@ -115,7 +119,12 @@ export default function VendorDashboard() {
   };
 
   const handleDeleteProject = async (id) => {
-    setProjectsList(projectsList.filter(p => p.id !== id));
+    try {
+      await axiosInstance.delete(`/vendor/projects/${id}`);
+      setProjectsList(projectsList.filter(p => p.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete project');
+    }
   };
 
   // Vendor Menus Configuration

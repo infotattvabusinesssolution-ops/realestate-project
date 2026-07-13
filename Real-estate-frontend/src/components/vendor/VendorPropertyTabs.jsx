@@ -544,15 +544,30 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
 
-  const mockRows = [
-    { id: 101, title: 'Renovated House with Contemporary Features', postBy: 'Vendor', type: 'residential', city: 'Houston', approval: 'Approved', featured: 'Yes', status: 'Active' },
-    { id: 102, title: 'Commercial Building in High-Traffic Area', postBy: 'Vendor', type: 'commercial', city: 'Orlando', approval: 'Approved', featured: 'No', status: 'Active' },
-    { id: 103, title: 'Fully Furnished Floor Ready for Move-In', postBy: 'Vendor', type: 'commercial', city: 'Houston', approval: 'Approved', featured: 'Yes', status: 'Active' }
-  ];
+  // Map API property data to table rows
+  const rows = (properties || []).map(p => ({
+    id: p.id || p._id,
+    title: p.title || p.name,
+    postBy: 'Vendor',
+    type: p.propertyType || (p.tag === 'Villa' || p.tag === 'Apartment' || p.tag === 'Penthouse' ? 'residential' : 'commercial'),
+    city: p.city || '—',
+    approval: p.status || 'Pending',
+    featured: p.isFeatured ? 'Yes' : 'No',
+    status: p.isActive !== false ? 'Active' : 'Inactive',
+  }));
 
-  const filteredMock = mockRows.filter(row => 
+  const filteredRows = rows.filter(row => 
     row.title.toLowerCase().includes(search.toLowerCase())
   );
+
+  const getApprovalColor = (approval) => {
+    switch (approval) {
+      case 'Approved': return 'bg-emerald-500';
+      case 'Pending': return 'bg-amber-500';
+      case 'Rejected': return 'bg-red-500';
+      default: return 'bg-slate-400';
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -626,7 +641,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredMock.map((row) => (
+              {filteredRows.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50/50 transition bg-white">
                   <td className="p-3">
                     <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
@@ -640,7 +655,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                   <td className="p-3 text-slate-500 font-semibold">{row.type}</td>
                   <td className="p-3 text-slate-500 font-semibold">{row.city}</td>
                   <td className="p-3">
-                    <span className="px-2.5 py-0.5 bg-emerald-500 text-white rounded-full text-[9px] font-bold uppercase">
+                    <span className={`px-2.5 py-0.5 ${getApprovalColor(row.approval)} text-white rounded-full text-[9px] font-bold uppercase`}>
                       {row.approval}
                     </span>
                   </td>
@@ -688,7 +703,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                   </td>
                 </tr>
               ))}
-              {filteredMock.length === 0 && (
+              {filteredRows.length === 0 && (
                 <tr>
                   <td colSpan="9" className="p-4 text-center text-slate-400">No properties found.</td>
                 </tr>
@@ -699,7 +714,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
 
         {/* Footer pagination */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 text-xs text-slate-500 font-medium">
-          <span>Showing 1 to {filteredMock.length} of {mockRows.length} entries</span>
+          <span>Showing 1 to {filteredRows.length} of {rows.length} entries</span>
           <div className="flex items-center space-x-1.5">
             <button className="px-3 py-1 bg-slate-100 rounded text-slate-700 cursor-not-allowed">Previous</button>
             <button className="px-3 py-1 bg-blue-600 text-white rounded font-bold">1</button>

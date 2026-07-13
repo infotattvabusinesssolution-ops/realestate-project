@@ -1,17 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home } from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
 
 export function VendorPaymentLogsTab() {
   const [search, setSearch] = useState('');
-  const logs = [
-    {
-      id: 'f359072f',
-      amount: '$399.99',
-      status: 'Success',
-      method: 'PayPal',
-      receipt: '-'
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPaymentLogs = async () => {
+      try {
+        setLoading(true);
+        const res = await axiosInstance.get('/vendor/payment-logs');
+        setLogs(res.data);
+      } catch (err) {
+        console.error('Failed to load payment logs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPaymentLogs();
+  }, []);
+
+  const filteredLogs = logs.filter(log =>
+    (log.txn || '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Success': return 'bg-emerald-500';
+      case 'Pending': return 'bg-amber-500';
+      case 'Failed': return 'bg-red-500';
+      default: return 'bg-slate-400';
     }
-  ];
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -47,44 +69,56 @@ export function VendorPaymentLogsTab() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
-                <th className="p-4">Transaction Id</th>
-                <th className="p-4">Amount</th>
-                <th className="p-4">Payment Status</th>
-                <th className="p-4">Payment Method</th>
-                <th className="p-4">Receipt</th>
-                <th className="p-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log, index) => (
-                <tr key={index} className="hover:bg-slate-50/30 transition bg-white border-b border-slate-50 text-[11px] font-medium text-slate-600">
-                  <td className="p-4 font-bold text-slate-800">{log.id}</td>
-                  <td className="p-4 font-extrabold text-slate-800">{log.amount}</td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-0.5 bg-emerald-500 text-white text-[9px] font-bold uppercase rounded-md">
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="p-4 font-bold text-slate-700">{log.method}</td>
-                  <td className="p-4 text-slate-400">{log.receipt}</td>
-                  <td className="p-4">
-                    <button 
-                      onClick={() => alert(`View receipt detail for TXN: ${log.id}`)}
-                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px] font-bold tracking-wide transition active:scale-95"
-                    >
-                      Detail
-                    </button>
-                  </td>
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className="border border-slate-150 rounded-2xl py-16 flex flex-col items-center justify-center bg-slate-50/20 text-slate-400 font-extrabold text-sm tracking-wider uppercase">
+            NO PAYMENT LOGS FOUND
+          </div>
+        ) : (
+          /* Table */
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
+                  <th className="p-4">Transaction Id</th>
+                  <th className="p-4">Amount</th>
+                  <th className="p-4">Payment Status</th>
+                  <th className="p-4">Payment Method</th>
+                  <th className="p-4">Receipt</th>
+                  <th className="p-4">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredLogs.map((log, index) => (
+                  <tr key={log._id || index} className="hover:bg-slate-50/30 transition bg-white border-b border-slate-50 text-[11px] font-medium text-slate-600">
+                    <td className="p-4 font-bold text-slate-800">{log.txn}</td>
+                    <td className="p-4 font-extrabold text-slate-800">{log.amount}</td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-0.5 ${getStatusColor(log.status)} text-white text-[9px] font-bold uppercase rounded-md`}>
+                        {log.status}
+                      </span>
+                    </td>
+                    <td className="p-4 font-bold text-slate-700">{log.method}</td>
+                    <td className="p-4 text-slate-400">{log.receipt || '-'}</td>
+                    <td className="p-4">
+                      <button 
+                        onClick={() => alert(`View receipt detail for TXN: ${log.txn}`)}
+                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px] font-bold tracking-wide transition active:scale-95"
+                      >
+                        Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
       </div>
 

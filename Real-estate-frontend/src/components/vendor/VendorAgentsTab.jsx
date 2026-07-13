@@ -1,31 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, Plus, ChevronDown } from 'lucide-react';
 import AddVendorAgentModal from '../modal/vendor/AddVendorAgentModal';
+import axiosInstance from '../../api/axiosInstance';
 
 export function VendorAgentsTab() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [agents, setAgents] = useState([
-    {
-      id: 1,
-      username: 'blake_nerli',
-      email: 'blake_nerli@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
-      status: 'Active'
-    }
-  ]);
-
-  const handleSaveAgent = (agentData) => {
-    const newAgent = {
-      id: Date.now(),
-      username: agentData.username,
-      email: agentData.email,
-      avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=80&q=80',
-      status: 'Active'
+  // Fetch agents from API on mount
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        setLoading(true);
+        const res = await axiosInstance.get('/vendor/agents');
+        const normalized = res.data.map(a => ({
+          id: a._id,
+          username: a.username || a.name,
+          email: a.email,
+          avatar: a.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
+          status: a.status || 'Active',
+        }));
+        setAgents(normalized);
+      } catch (err) {
+        console.error('Failed to load agents:', err);
+      } finally {
+        setLoading(false);
+      }
     };
-    setAgents([...agents, newAgent]);
-    setIsModalOpen(false);
+    fetchAgents();
+  }, []);
+
+  const handleSaveAgent = async (agentData) => {
+    try {
+      const res = await axiosInstance.post('/vendor/agents', {
+        username: agentData.username,
+        email: agentData.email,
+        password: agentData.password || 'Agent@123',
+        phone: agentData.phone || '',
+      });
+      const newAgent = {
+        id: res.data._id,
+        username: res.data.username || res.data.name,
+        email: res.data.email,
+        avatar: res.data.avatar || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=80&q=80',
+        status: res.data.status || 'Active',
+      };
+      setAgents([...agents, newAgent]);
+      setIsModalOpen(false);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add agent');
+    }
   };
 
   const filteredAgents = agents.filter(agent => 
@@ -89,67 +115,78 @@ export function VendorAgentsTab() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
-                <th className="p-3 w-12 text-center">#</th>
-                <th className="p-3 w-28">Profile Picture</th>
-                <th className="p-3">Username</th>
-                <th className="p-3">Email ID</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredAgents.map((agent, index) => (
-                <tr key={agent.id} className="hover:bg-slate-50/50 transition bg-white">
-                  <td className="p-3 text-center text-slate-500 font-bold">{index + 1}</td>
-                  <td className="p-3">
-                    <img 
-                      src={agent.avatar} 
-                      alt={agent.username} 
-                      className="w-10 h-10 rounded object-cover ring-2 ring-slate-100" 
-                    />
-                  </td>
-                  <td className="p-3 font-semibold text-slate-800">{agent.username}</td>
-                  <td className="p-3 text-slate-550 font-medium">{agent.email}</td>
-                  <td className="p-3">
-                    <select 
-                      defaultValue={agent.status}
-                      className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-emerald-500 text-white border-0 focus:outline-none"
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  </td>
-                  <td className="p-3 text-right">
-                    <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1 inline-flex">
-                      <span>Select</span>
-                      <ChevronDown size={8} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredAgents.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="p-4 text-center text-slate-400">No agents found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer pagination */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 text-xs text-slate-500 font-medium">
-          <span>Showing 1 to {filteredAgents.length} of {agents.length} entries</span>
-          <div className="flex items-center space-x-1.5">
-            <button className="px-3 py-1 bg-slate-100 rounded text-slate-700 cursor-not-allowed">Previous</button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded font-bold">1</button>
-            <button className="px-3 py-1 bg-slate-100 rounded text-slate-700 cursor-not-allowed">Next</button>
+        {/* Loading state */}
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-14 bg-slate-100 rounded-lg animate-pulse"></div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
+                    <th className="p-3 w-12 text-center">#</th>
+                    <th className="p-3 w-28">Profile Picture</th>
+                    <th className="p-3">Username</th>
+                    <th className="p-3">Email ID</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredAgents.map((agent, index) => (
+                    <tr key={agent.id} className="hover:bg-slate-50/50 transition bg-white">
+                      <td className="p-3 text-center text-slate-500 font-bold">{index + 1}</td>
+                      <td className="p-3">
+                        <img 
+                          src={agent.avatar} 
+                          alt={agent.username} 
+                          className="w-10 h-10 rounded object-cover ring-2 ring-slate-100" 
+                        />
+                      </td>
+                      <td className="p-3 font-semibold text-slate-800">{agent.username}</td>
+                      <td className="p-3 text-slate-550 font-medium">{agent.email}</td>
+                      <td className="p-3">
+                        <select 
+                          defaultValue={agent.status}
+                          className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-emerald-500 text-white border-0 focus:outline-none"
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1 inline-flex">
+                          <span>Select</span>
+                          <ChevronDown size={8} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredAgents.length === 0 && (
+                    <tr>
+                      <td colSpan="6" className="p-4 text-center text-slate-400">No agents found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer pagination */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 text-xs text-slate-500 font-medium">
+              <span>Showing 1 to {filteredAgents.length} of {agents.length} entries</span>
+              <div className="flex items-center space-x-1.5">
+                <button className="px-3 py-1 bg-slate-100 rounded text-slate-700 cursor-not-allowed">Previous</button>
+                <button className="px-3 py-1 bg-blue-600 text-white rounded font-bold">1</button>
+                <button className="px-3 py-1 bg-slate-100 rounded text-slate-700 cursor-not-allowed">Next</button>
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
 
