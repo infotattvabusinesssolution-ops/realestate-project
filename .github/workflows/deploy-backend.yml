@@ -3,7 +3,7 @@ name: Deploy Backend
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'Real-estate-backend/**'
 
@@ -23,7 +23,7 @@ jobs:
           script: |
             cd /var/www/realestate-project/Real-estate-backend
 
-            git pull origin main
+            git pull origin master
 
             npm install
 
