@@ -1,34 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export function VendorEditProfileTab() {
   const { user, updateProfile } = useAuth();
   
-  const [username, setUsername] = useState(user?.email || 'oscar_eade');
-  const [email, setEmail] = useState(user?.email || 'oscar@estacy.com');
-  const [phone, setPhone] = useState(user?.phone || '+535465462546');
-  
+  // States matching user schema
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [city, setCity] = useState('');
+  const [stateName, setStateName] = useState('');
+  const [zip, setZip] = useState('');
+  const [address, setAddress] = useState('');
+  const [details, setDetails] = useState('');
+
   const [showEmail, setShowEmail] = useState(true);
   const [showPhone, setShowPhone] = useState(true);
   const [showContactForm, setShowContactForm] = useState(true);
-
-  // English details states
-  const [name, setName] = useState(user?.name || 'Oscar Eade');
-  const [country, setCountry] = useState('USA');
-  const [city, setCity] = useState(user?.city || 'San Antonio');
-  const [stateName, setStateName] = useState(user?.state || 'Texas');
-  const [zip, setZip] = useState(user?.zip || '');
-  const [address, setAddress] = useState(user?.address || '123 Alamo Plaza San Antonio, TX 78205');
-  const [details, setDetails] = useState(
-    user?.specialization || "Residential Construction"
-  );
-
   const [arabicExpanded, setArabicExpanded] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
+  // Load user data on mount/context change
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username || user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      setName(user.name || '');
+      setAvatar(user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80');
+      setCity(user.city || '');
+      setStateName(user.state || '');
+      setZip(user.zip || '');
+      setAddress(user.address || '');
+      setDetails(user.specialization || '');
+    }
+  }, [user]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
+      setUpdating(true);
       await updateProfile({
         name,
         phone,
@@ -36,11 +50,14 @@ export function VendorEditProfileTab() {
         state: stateName,
         zip,
         address,
-        specialization: details
+        specialization: details,
+        avatar
       });
       alert('Profile updated successfully!');
     } catch (err) {
       alert(err || 'Failed to update profile.');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -71,18 +88,22 @@ export function VendorEditProfileTab() {
           <div className="space-y-6">
             <h4 className="text-xs font-black text-slate-850 border-b border-slate-100 pb-2">Details</h4>
             
-            {/* Photo Uploader */}
+            {/* Photo Uploader/Viewer */}
             <div className="space-y-3">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Photo</span>
-              <div className="flex items-center space-x-4">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Photo URL</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <img 
-                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" 
-                  alt="Oscar Eade" 
-                  className="w-32 h-32 rounded-xl object-cover border border-slate-150 shadow-sm"
+                  src={avatar} 
+                  alt={name || "Profile"} 
+                  className="w-24 h-24 rounded-2xl object-cover border border-slate-150 shadow-sm shrink-0"
                 />
-                <button type="button" className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-[10px] transition active:scale-95">
-                  Choose Photo
-                </button>
+                <input 
+                  type="text" 
+                  value={avatar}
+                  onChange={(e) => setAvatar(e.target.value)}
+                  placeholder="Paste direct image URL"
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none max-w-md"
+                />
               </div>
             </div>
 
@@ -90,24 +111,22 @@ export function VendorEditProfileTab() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
               <div className="flex flex-col space-y-1.5">
-                <label>Username*</label>
+                <label className="text-slate-500">Username (Read-Only)</label>
                 <input 
                   type="text" 
-                  required 
+                  disabled
                   value={username} 
-                  onChange={(e) => setUsername(e.target.value)} 
-                  className="bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+                  className="bg-slate-100 border border-slate-250 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 cursor-not-allowed" 
                 />
               </div>
 
               <div className="flex flex-col space-y-1.5">
-                <label>Email*</label>
+                <label className="text-slate-500">Email (Read-Only)</label>
                 <input 
                   type="email" 
-                  required 
+                  disabled
                   value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  className="bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+                  className="bg-slate-100 border border-slate-250 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 cursor-not-allowed" 
                 />
               </div>
 
@@ -117,7 +136,7 @@ export function VendorEditProfileTab() {
                   type="text" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
-                  className="bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
                 />
               </div>
 
@@ -126,7 +145,7 @@ export function VendorEditProfileTab() {
             {/* Checkboxes Row */}
             <div className="flex flex-wrap gap-6 pt-2">
               
-              <label className="flex items-center space-x-2 text-slate-700 select-none cursor-pointer">
+              <label className="flex items-center space-x-2 text-slate-750 select-none cursor-pointer font-bold">
                 <input 
                   type="checkbox" 
                   checked={showEmail} 
@@ -136,7 +155,7 @@ export function VendorEditProfileTab() {
                 <span>Show Email Address</span>
               </label>
 
-              <label className="flex items-center space-x-2 text-slate-700 select-none cursor-pointer">
+              <label className="flex items-center space-x-2 text-slate-755 select-none cursor-pointer font-bold">
                 <input 
                   type="checkbox" 
                   checked={showPhone} 
@@ -146,7 +165,7 @@ export function VendorEditProfileTab() {
                 <span>Show Phone Number</span>
               </label>
 
-              <label className="flex items-center space-x-2 text-slate-700 select-none cursor-pointer">
+              <label className="flex items-center space-x-2 text-slate-760 select-none cursor-pointer font-bold">
                 <input 
                   type="checkbox" 
                   checked={showContactForm} 
@@ -181,16 +200,6 @@ export function VendorEditProfileTab() {
                 </div>
 
                 <div className="flex flex-col space-y-1.5">
-                  <label>Country</label>
-                  <input 
-                    type="text" 
-                    value={country} 
-                    onChange={(e) => setCountry(e.target.value)} 
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-1.5">
                   <label>City</label>
                   <input 
                     type="text" 
@@ -210,17 +219,17 @@ export function VendorEditProfileTab() {
                   />
                 </div>
 
-              </div>
+                <div className="flex flex-col space-y-1.5">
+                  <label>Zip Code</label>
+                  <input 
+                    type="text" 
+                    value={zip} 
+                    onChange={(e) => setZip(e.target.value)} 
+                    placeholder="Enter Zip Code" 
+                    className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full" 
+                  />
+                </div>
 
-              <div className="flex flex-col space-y-1.5 col-span-2">
-                <label>Zip Code</label>
-                <input 
-                  type="text" 
-                  value={zip} 
-                  onChange={(e) => setZip(e.target.value)} 
-                  placeholder="Enter Zip Code" 
-                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full md:w-1/2" 
-                />
               </div>
 
               <div className="flex flex-col space-y-1.5">
@@ -234,11 +243,11 @@ export function VendorEditProfileTab() {
               </div>
 
               <div className="flex flex-col space-y-1.5">
-                <label>Details</label>
+                <label>Specialization / Details</label>
                 <textarea 
                   value={details} 
                   onChange={(e) => setDetails(e.target.value)} 
-                  rows="8"
+                  rows="6"
                   className="bg-white border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-800 focus:outline-none w-full" 
                 />
               </div>
@@ -281,13 +290,14 @@ export function VendorEditProfileTab() {
             )}
           </div>
 
-          {/* Centered green submit button */}
+          {/* Submit button */}
           <div className="flex justify-center pt-4">
             <button 
               type="submit" 
-              className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10"
+              disabled={updating}
+              className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10 disabled:opacity-50"
             >
-              Update
+              {updating ? 'Updating...' : 'Update'}
             </button>
           </div>
 

@@ -8,6 +8,8 @@ export function VendorChangePasswordTab() {
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPass !== confirm) {
@@ -16,6 +18,7 @@ export function VendorChangePasswordTab() {
     }
     
     try {
+      setSubmitting(true);
       await changePassword(current, newPass);
       alert('Password updated successfully!');
       setCurrent('');
@@ -23,6 +26,8 @@ export function VendorChangePasswordTab() {
       setConfirm('');
     } catch (err) {
       alert(err || 'Failed to change password. Please verify current password.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -86,9 +91,10 @@ export function VendorChangePasswordTab() {
           <div className="flex justify-center pt-6">
             <button 
               type="submit" 
-              className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10"
+              disabled={submitting}
+              className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10"
             >
-              Update
+              {submitting ? 'Updating...' : 'Update'}
             </button>
           </div>
 

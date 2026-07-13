@@ -1,19 +1,22 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Building2 } from 'lucide-react';
 import AddVendorPropertyModal from '../modal/vendor/AddVendorPropertyModal';
+import axiosInstance from '../../api/axiosInstance';
 
-const initialProperties = [
-  { id: 1, name: 'Serene Meadow Villa', price: '$850,000', views: 24, leads: 5, tag: 'Villa', type: 'Buy', status: 'Active' },
-  { id: 2, name: 'Aura Heights Apartment', price: '$3,200/mo', views: 56, leads: 12, tag: 'Apartment', type: 'Rent', status: 'Active' },
-  { id: 3, name: 'Oakridge Executive Penthouse', price: '$1,400,000', views: 8, leads: 2, tag: 'Penthouse', type: 'Buy', status: 'Pending Approval' }
-];
-
-
-
-export function VendorPropertyAddTab({ setActiveTab, onSave }) {
+export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
   const [selectedType, setSelectedType] = useState('none'); // 'none', 'commercial', 'residential'
-  
+  const [submitting, setSubmitting] = useState(false);
+
+  // --- Dropdown data from API ---
+  const [categories, setCategories] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [amenitiesList, setAmenitiesList] = useState([]);
+  const [agentsList, setAgentsList] = useState([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(true);
+
   // Form fields state
   const [videoUrl, setVideoUrl] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -21,7 +24,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
   const [country, setCountry] = useState('');
   const [stateName, setStateName] = useState('');
   const [cityName, setCityName] = useState('');
-  const [amenities, setAmenities] = useState('');
+  const [amenities, setAmenities] = useState([]);
   const [price, setPrice] = useState('');
   const [beds, setBeds] = useState('');
   const [baths, setBaths] = useState('');
@@ -45,8 +48,57 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
 
   // Additional features state
   const [features, setFeatures] = useState([
-    { id: Date.now(), labelEn: 'Label (English)', valueEn: 'Value (English)', labelAr: 'Label (Arabic)', valueAr: 'Value (Arabic)' }
+    { id: Date.now(), labelEn: '', valueEn: '', labelAr: '', valueAr: '' }
   ]);
+
+  // Fetch dropdown data from specs API (public endpoints)
+  useEffect(() => {
+    const fetchDropdowns = async () => {
+      try {
+        setLoadingDropdowns(true);
+        const [catRes, countryRes, stateRes, cityRes, amenityRes, agentRes] = await Promise.all([
+          axiosInstance.get('/specs/categories'),
+          axiosInstance.get('/specs/countries'),
+          axiosInstance.get('/specs/states'),
+          axiosInstance.get('/specs/cities'),
+          axiosInstance.get('/specs/amenities'),
+          axiosInstance.get('/vendor/agents'),
+        ]);
+        setCategories(catRes.data);
+        setCountries(countryRes.data);
+        setStates(stateRes.data);
+        setCities(cityRes.data);
+        setAmenitiesList(amenityRes.data);
+        setAgentsList(agentRes.data);
+      } catch (err) {
+        console.error('Failed to load dropdown data:', err);
+      } finally {
+        setLoadingDropdowns(false);
+      }
+    };
+    fetchDropdowns();
+  }, []);
+
+  // Filter categories based on selected property type
+  const filteredCategories = categories.filter(c => {
+    if (selectedType === 'commercial') return c.type === 'Commercial';
+    if (selectedType === 'residential') return c.type === 'Residential';
+    return true;
+  });
+
+  // Filter states based on selected country
+  const filteredStates = states.filter(s =>
+    !country || (s.country && (s.country._id === country || s.country.name === country))
+  );
+
+  // Filter cities based on selected state
+  const filteredCities = cities.filter(c =>
+    !stateName || (c.state && (c.state._id === stateName || c.state.name === stateName))
+  );
+
+  // Compute real counts from properties prop
+  const commercialCount = (properties || []).filter(p => p.propertyType === 'Commercial').length;
+  const residentialCount = (properties || []).filter(p => p.propertyType === 'Residential' || !p.propertyType).length;
 
   const addFeatureRow = () => {
     if (features.length >= 20) return;
@@ -67,19 +119,15 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title || !price) {
-      alert('Please fill out the Property Title and Price.');
-      return;
-    }
-    onSave({
-      name: title,
-      price: price.startsWith('$') ? price : `$${price}`,
-      tag: category || (selectedType === 'commercial' ? 'Commercial' : 'Villa'),
-      type: purpose || 'Buy'
-    });
-    // Reset
+  const handleAmenityToggle = (amenityId) => {
+    setAmenities(prev =>
+      prev.includes(amenityId)
+        ? prev.filter(id => id !== amenityId)
+        : [...prev, amenityId]
+    );
+  };
+
+  const resetForm = () => {
     setSelectedType('none');
     setVideoUrl('');
     setPurpose('');
@@ -87,7 +135,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
     setCountry('');
     setStateName('');
     setCityName('');
-    setAmenities('');
+    setAmenities([]);
     setPrice('');
     setBeds('');
     setBaths('');
@@ -105,7 +153,72 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
     setTitleAr('');
     setAddressAr('');
     setDescriptionAr('');
-    setFeatures([{ id: Date.now(), labelEn: 'Label (English)', valueEn: 'Value (English)', labelAr: 'Label (Arabic)', valueAr: 'Value (Arabic)' }]);
+    setFeatures([{ id: Date.now(), labelEn: '', valueEn: '', labelAr: '', valueAr: '' }]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title || !price) {
+      alert('Please fill out the Property Title and Price.');
+      return;
+    }
+
+    // Find selected category name for the tag
+    const selectedCat = categories.find(c => c._id === category);
+    // Find selected country/state/city names
+    const selectedCountry = countries.find(c => c._id === country);
+    const selectedState = states.find(s => s._id === stateName);
+    const selectedCity = cities.find(c => c._id === cityName);
+
+    const payload = {
+      name: title,
+      price: price.startsWith('$') ? price : `$${price}`,
+      type: purpose || 'For Sell',
+      propertyType: selectedType === 'commercial' ? 'Commercial' : 'Residential',
+      tag: selectedCat ? selectedCat.name : (selectedType === 'commercial' ? 'Commercial' : 'Villa'),
+      address: address || '',
+      description: description || '',
+      city: selectedCity ? selectedCity.name : '',
+      country: selectedCountry ? selectedCountry.name : '',
+      state: selectedState ? selectedState.name : '',
+      beds: beds || 0,
+      baths: baths || 0,
+      area: area || '',
+      videoUrl: videoUrl || '',
+      latitude: latitude || '',
+      longitude: longitude || '',
+      metaKeywords: metaKeywords || '',
+      metaDesc: metaDesc || '',
+      titleAr: titleAr || '',
+      addressAr: addressAr || '',
+      descriptionAr: descriptionAr || '',
+    };
+
+    // Optional references
+    if (agent) payload.assignedAgent = agent;
+    if (category) payload.category = category;
+    if (amenities.length > 0) payload.amenities = amenities;
+    
+    // Features
+    const validFeatures = features.filter(f => f.labelEn || f.valueEn);
+    if (validFeatures.length > 0) {
+      payload.features = validFeatures.map(f => ({
+        labelEn: f.labelEn,
+        valueEn: f.valueEn,
+        labelAr: f.labelAr,
+        valueAr: f.valueAr,
+      }));
+    }
+
+    try {
+      setSubmitting(true);
+      await onSave(payload);
+      resetForm();
+    } catch (err) {
+      // Error already handled in parent onSave
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // STEP 1: CHOOSE PROPERTY TYPE
@@ -139,7 +252,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
               </div>
               <div>
                 <h4 className="font-extrabold text-slate-800 text-sm tracking-wide uppercase">COMMERCIAL</h4>
-                <p className="text-[10px] text-slate-400 font-bold mt-1">Total: 2 Properties</p>
+                <p className="text-[10px] text-slate-400 font-bold mt-1">Total: {commercialCount} Properties</p>
               </div>
             </div>
 
@@ -153,7 +266,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
               </div>
               <div>
                 <h4 className="font-extrabold text-slate-800 text-sm tracking-wide uppercase">RESIDENTIAL</h4>
-                <p className="text-[10px] text-slate-400 font-bold mt-1">Total: 1 Properties</p>
+                <p className="text-[10px] text-slate-400 font-bold mt-1">Total: {residentialCount} Properties</p>
               </div>
             </div>
           </div>
@@ -255,40 +368,74 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
               <label>Category*</label>
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                 <option value="">Select a Category</option>
-                {selectedType === 'commercial' ? (
-                  <>
-                    <option value="Office">Office</option>
-                    <option value="Retail">Retail</option>
-                    <option value="Industrial">Industrial</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="Villa">Villa</option>
-                    <option value="Apartment">Apartment</option>
-                    <option value="Penthouse">Penthouse</option>
-                  </>
-                )}
+                {filteredCategories.map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                ))}
               </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>Country*</label>
-              <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Select Country" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <select value={country} onChange={(e) => { setCountry(e.target.value); setStateName(''); setCityName(''); }} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+                <option value="">Select Country</option>
+                {countries.map(c => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>State*</label>
-              <input type="text" value={stateName} onChange={(e) => setStateName(e.target.value)} placeholder="Select State" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <select value={stateName} onChange={(e) => { setStateName(e.target.value); setCityName(''); }} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+                <option value="">Select State</option>
+                {filteredStates.map(s => (
+                  <option key={s._id} value={s._id}>{s.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>City*</label>
-              <input type="text" value={cityName} onChange={(e) => setCityName(e.target.value)} placeholder="Select City" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <select value={cityName} onChange={(e) => setCityName(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+                <option value="">Select City</option>
+                {filteredCities.map(c => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>Amenities*</label>
-              <input type="text" value={amenities} onChange={(e) => setAmenities(e.target.value)} placeholder="Select Amenities" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <div className="relative">
+                <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 min-h-[36px] flex flex-wrap gap-1">
+                  {amenities.length === 0 ? (
+                    <span className="text-slate-400">Select Amenities</span>
+                  ) : (
+                    amenities.map(aId => {
+                      const am = amenitiesList.find(a => a._id === aId);
+                      return am ? (
+                        <span key={aId} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold flex items-center gap-1">
+                          {am.name}
+                          <button type="button" onClick={() => handleAmenityToggle(aId)} className="text-blue-400 hover:text-red-500">×</button>
+                        </span>
+                      ) : null;
+                    })
+                  )}
+                </div>
+                <div className="mt-1 max-h-32 overflow-y-auto border border-slate-100 rounded-lg bg-white shadow-sm">
+                  {amenitiesList.filter(a => a.status === 'Active').map(am => (
+                    <label key={am._id} className="flex items-center px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-[10px] font-medium text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={amenities.includes(am._id)}
+                        onChange={() => handleAmenityToggle(am._id)}
+                        className="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3 h-3"
+                      />
+                      {am.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col space-y-1.5">
@@ -341,8 +488,9 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
               <div>
                 <select value={agent} onChange={(e) => setAgent(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                   <option value="">Select Agent</option>
-                  <option value="Alice Smith">Alice Smith</option>
-                  <option value="Bob Johnson">Bob Johnson</option>
+                  {agentsList.map(ag => (
+                    <option key={ag._id} value={ag._id}>{ag.name || ag.username}</option>
+                  ))}
                 </select>
                 <p className="text-[9px] text-orange-400 font-bold mt-1 leading-none">If you do not select any agent, then this property will be listed under you</p>
               </div>
@@ -529,9 +677,10 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
         <div className="flex justify-center pt-6">
           <button 
             type="submit"
-            className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10"
+            disabled={submitting}
+            className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save
+            {submitting ? 'Saving...' : 'Save'}
           </button>
         </div>
 
@@ -540,6 +689,11 @@ export function VendorPropertyAddTab({ setActiveTab, onSave }) {
   );
 }
 
+
+
+// ============================================================
+// PROPERTY LIST TAB
+// ============================================================
 export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAddClick }) {
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
@@ -549,7 +703,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
     id: p.id || p._id,
     title: p.title || p.name,
     postBy: 'Vendor',
-    type: p.propertyType || (p.tag === 'Villa' || p.tag === 'Apartment' || p.tag === 'Penthouse' ? 'residential' : 'commercial'),
+    type: p.propertyType || 'Residential',
     city: p.city || '—',
     approval: p.status || 'Pending',
     featured: p.isFeatured ? 'Yes' : 'No',
@@ -566,6 +720,22 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
       case 'Pending': return 'bg-amber-500';
       case 'Rejected': return 'bg-red-500';
       default: return 'bg-slate-400';
+    }
+  };
+
+  const handleStatusChange = async (id, newActiveState) => {
+    try {
+      await axiosInstance.put(`/vendor/properties/${id}`, { isActive: newActiveState === 'Active' });
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
+  };
+
+  const handleFeaturedChange = async (id, newFeaturedState) => {
+    try {
+      await axiosInstance.put(`/vendor/properties/${id}`, { isFeatured: newFeaturedState === 'Yes' });
+    } catch (err) {
+      console.error('Failed to update featured:', err);
     }
   };
 
@@ -663,6 +833,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                     <div className="flex items-center space-x-1">
                       <select 
                         defaultValue={row.featured}
+                        onChange={(e) => handleFeaturedChange(row.id, e.target.value)}
                         className={`text-[10px] font-bold rounded-md px-1.5 py-1 text-white border-0 focus:outline-none ${
                           row.featured === 'Yes' ? 'bg-emerald-500' : 'bg-red-500'
                         }`}
@@ -680,6 +851,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                   <td className="p-3">
                     <select 
                       defaultValue={row.status}
+                      onChange={(e) => handleStatusChange(row.id, e.target.value)}
                       className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-emerald-500 text-white border-0 focus:outline-none"
                     >
                       <option value="Active">Active</option>

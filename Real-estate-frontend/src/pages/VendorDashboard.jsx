@@ -79,6 +79,33 @@ export default function VendorDashboard() {
     fetchVendorData();
   }, [token]);
 
+  // Handle Stripe Checkout success verification
+  useEffect(() => {
+    const verifyPayment = async () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const isSuccess = searchParams.get('purchase_success') === 'true';
+      const sessionId = searchParams.get('session_id');
+      const packageId = searchParams.get('package_id');
+
+      if (isSuccess && sessionId && packageId) {
+        try {
+          await axiosInstance.post('/vendor/verify-checkout-session', {
+            sessionId,
+            packageId,
+          });
+          alert('Subscription updated successfully! Your active plan is ready.');
+          // Remove query params from URL without reloading
+          window.history.replaceState({}, document.title, window.location.pathname);
+          // Reload dashboard data
+          fetchVendorData();
+        } catch (err) {
+          console.error('Failed to verify payment session:', err);
+        }
+      }
+    };
+    verifyPayment();
+  }, [token]);
+
   const handleAddProperty = async (prop) => {
     try {
       const res = await axiosInstance.post('/vendor/properties', prop);
@@ -227,6 +254,43 @@ export default function VendorDashboard() {
               className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-100 cursor-pointer"
               onClick={() => setProfileExpanded(!profileExpanded)}
             />
+            {profileExpanded && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-slate-100 shadow-xl py-2 z-50 text-xs font-semibold text-slate-700 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="px-4 py-2 border-b border-slate-50">
+                  <p className="font-extrabold text-slate-800 truncate">{user?.name || 'Vendor'}</p>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('edit-profile');
+                    setProfileExpanded(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 transition"
+                >
+                  My Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('change-password');
+                    setProfileExpanded(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 transition"
+                >
+                  Change Password
+                </button>
+                <div className="border-t border-slate-50 my-1"></div>
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate('/');
+                  }}
+                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition flex items-center space-x-1.5"
+                >
+                  <LogOut size={12} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -437,7 +501,7 @@ export default function VendorDashboard() {
 
           {/* PROPERTY MANAGEMENT TABS */}
           {activeTab === 'properties-add' && (
-            <VendorPropertyAddTab setActiveTab={setActiveTab} onSave={handleAddProperty} />
+            <VendorPropertyAddTab setActiveTab={setActiveTab} onSave={handleAddProperty} properties={propertiesList} />
           )}
           {activeTab === 'properties-list' && (
             <VendorPropertyListTab

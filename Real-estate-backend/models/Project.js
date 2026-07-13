@@ -55,6 +55,10 @@ const projectSchema = new mongoose.Schema(
     longitude: { type: String, default: '' },
     features: [
       {
+        labelEn: String,
+        valueEn: String,
+        labelAr: String,
+        valueAr: String,
         label: String,
         value: String,
       },
@@ -78,6 +82,30 @@ const projectSchema = new mongoose.Schema(
     image: {
       type: String,
       default: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+    },
+    assignedAgent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    metaKeywords: {
+      type: String,
+      default: '',
+    },
+    metaDesc: {
+      type: String,
+      default: '',
+    },
+    titleAr: {
+      type: String,
+      default: '',
+    },
+    addressAr: {
+      type: String,
+      default: '',
+    },
+    descriptionAr: {
+      type: String,
+      default: '',
     },
   },
   {

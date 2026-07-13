@@ -3,19 +3,28 @@ import {
   getVendorStats,
   getVendorProperties,
   createVendorProperty,
+  updateVendorProperty,
   getVendorProjects,
   createVendorProject,
+  updateVendorProject,
   getVendorLeads,
+  deleteVendorLead,
+  replyVendorLead,
   getVendorAgents,
+  createVendorAgent,
+  updateVendorAgent,
+  deleteVendorAgent,
   getVendorChartData,
   getVendorTickets,
   createVendorTicket,
   getVendorTicketDetail,
   replyVendorTicket,
   getVendorPaymentLogs,
-  createVendorAgent,
   deleteVendorProperty,
   deleteVendorProject,
+  purchasePackage,
+  createCheckoutSession,
+  verifyCheckoutSession,
 } from '../controllers/vendorController.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 
@@ -31,19 +40,27 @@ router.route('/properties')
   .get(getVendorProperties)
   .post(createVendorProperty);
 
+router.put('/properties/:id', updateVendorProperty);
 router.delete('/properties/:id', deleteVendorProperty);
 
 router.route('/projects')
   .get(getVendorProjects)
   .post(createVendorProject);
 
+router.put('/projects/:id', updateVendorProject);
 router.delete('/projects/:id', deleteVendorProject);
 
 router.get('/leads', getVendorLeads);
+router.delete('/leads/:id', deleteVendorLead);
+router.post('/leads/:id/reply', replyVendorLead);
 
 router.route('/agents')
   .get(getVendorAgents)
   .post(createVendorAgent);
+
+router.route('/agents/:id')
+  .put(updateVendorAgent)
+  .delete(deleteVendorAgent);
 
 router.route('/tickets')
   .get(getVendorTickets)
@@ -53,5 +70,8 @@ router.get('/tickets/:id', getVendorTicketDetail);
 router.post('/tickets/:id/reply', replyVendorTicket);
 
 router.get('/payment-logs', getVendorPaymentLogs);
+router.post('/purchase-package', purchasePackage);
+router.post('/create-checkout-session', createCheckoutSession);
+router.post('/verify-checkout-session', verifyCheckoutSession);
 
 export default router;

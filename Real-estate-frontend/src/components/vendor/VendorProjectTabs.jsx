@@ -1,16 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
-
-const initialProjects = [
-  { id: 1, name: 'Grand Horizon Estate', location: 'Beverly Hills, CA', units: '45 Units total, 12 Booked', status: 'Under Construction', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80' },
-  { id: 2, name: 'Riverside Commercial Center', location: 'Seattle, WA', units: '120 Units total, 80 Booked', status: 'Completed', image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80' }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export function VendorProjectAddTab({ setActiveTab, onSave }) {
+  // --- Dropdown data ---
+  const [agentsList, setAgentsList] = useState([]);
+  const [loadingDropdowns, setLoadingDropdowns] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
   // Form fields state
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [status, setStatus] = useState('Complete');
+  const [status, setStatus] = useState('Under Construction');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [agent, setAgent] = useState('');
@@ -29,8 +30,24 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
 
   // Additional features state
   const [features, setFeatures] = useState([
-    { id: Date.now(), labelEn: 'Label (English)', valueEn: 'Value (English)', labelAr: 'Label (Arabic)', valueAr: 'Value (Arabic)' }
+    { id: Date.now(), labelEn: '', valueEn: '', labelAr: '', valueAr: '' }
   ]);
+
+  // Fetch agents list
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        setLoadingDropdowns(true);
+        const res = await axiosInstance.get('/vendor/agents');
+        setAgentsList(res.data);
+      } catch (err) {
+        console.error('Failed to load agents:', err);
+      } finally {
+        setLoadingDropdowns(false);
+      }
+    };
+    fetchAgents();
+  }, []);
 
   const addFeatureRow = () => {
     if (features.length >= 20) return;
@@ -51,35 +68,69 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !minPrice) {
       alert('Please fill out the Project Title and Minimum Price.');
       return;
     }
-    onSave({
+
+    const payload = {
       name: title,
-      location: address || 'Houston, TX',
-      units: '45 Units total, 12 Booked',
-      status: status
-    });
-    // Reset
-    setMinPrice('');
-    setMaxPrice('');
-    setStatus('Complete');
-    setLatitude('');
-    setLongitude('');
-    setAgent('');
-    setTitle('');
-    setAddress('');
-    setDescription('');
-    setMetaKeywords('');
-    setMetaDesc('');
-    setTranslateArabic(false);
-    setTitleAr('');
-    setAddressAr('');
-    setDescriptionAr('');
-    setFeatures([{ id: Date.now(), labelEn: 'Label (English)', valueEn: 'Value (English)', labelAr: 'Label (Arabic)', valueAr: 'Value (Arabic)' }]);
+      location: address || '',
+      units: '10 Units', // standard default
+      status: status,
+      minPrice: minPrice,
+      maxPrice: maxPrice || '',
+      latitude: latitude || '',
+      longitude: longitude || '',
+      description: description || '',
+      metaKeywords: metaKeywords || '',
+      metaDesc: metaDesc || '',
+      titleAr: titleAr || '',
+      addressAr: addressAr || '',
+      descriptionAr: descriptionAr || '',
+    };
+
+    if (agent) {
+      payload.assignedAgent = agent;
+    }
+
+    const validFeatures = features.filter(f => f.labelEn || f.valueEn);
+    if (validFeatures.length > 0) {
+      payload.features = validFeatures.map(f => ({
+        labelEn: f.labelEn,
+        valueEn: f.valueEn,
+        labelAr: f.labelAr,
+        valueAr: f.valueAr,
+      }));
+    }
+
+    try {
+      setSubmitting(true);
+      await onSave(payload);
+      // Reset
+      setMinPrice('');
+      setMaxPrice('');
+      setStatus('Under Construction');
+      setLatitude('');
+      setLongitude('');
+      setAgent('');
+      setTitle('');
+      setAddress('');
+      setDescription('');
+      setMetaKeywords('');
+      setMetaDesc('');
+      setTranslateArabic(false);
+      setTitleAr('');
+      setAddressAr('');
+      setDescriptionAr('');
+      setFeatures([{ id: Date.now(), labelEn: '', valueEn: '', labelAr: '', valueAr: '' }]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -157,8 +208,10 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
             <div className="flex flex-col space-y-1.5">
               <label>Status*</label>
               <select value={status} onChange={(e) => setStatus(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+                <option value="Under Construction">Under Construction</option>
+                <option value="Pre-launching">Pre-launching</option>
+                <option value="Ready to Move">Ready to Move</option>
                 <option value="Complete">Complete</option>
-                <option value="Incomplete">Incomplete</option>
               </select>
             </div>
 
@@ -177,8 +230,9 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
               <div>
                 <select value={agent} onChange={(e) => setAgent(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                   <option value="">Please Select</option>
-                  <option value="Alice Smith">Alice Smith</option>
-                  <option value="Bob Johnson">Bob Johnson</option>
+                  {agentsList.map(ag => (
+                    <option key={ag._id} value={ag._id}>{ag.name || ag.username}</option>
+                  ))}
                 </select>
                 <p className="text-[9px] text-orange-400 font-bold mt-1 leading-none">If you do not select any agent, then this project will be listed under you</p>
               </div>
@@ -361,9 +415,10 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
         <div className="flex justify-center pt-6">
           <button 
             type="submit"
-            className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10"
+            disabled={submitting}
+            className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save
+            {submitting ? 'Saving...' : 'Save'}
           </button>
         </div>
 
@@ -376,14 +431,35 @@ export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddCl
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
 
-  const mockProjectsList = [
-    { id: 201, title: 'Harmony Urban Village', postBy: 'Vendor', approval: 'Approved', status: 'Complete' },
-    { id: 202, title: 'Urban Oasis Residences', postBy: 'Vendor', approval: 'Approved', status: 'Complete' }
-  ];
+  // Map API project data to table rows
+  const rows = (projects || []).map(p => ({
+    id: p.id || p._id,
+    title: p.name || p.title,
+    postBy: 'Vendor',
+    approval: p.approvalStatus || 'Pending',
+    status: p.status || 'Under Construction'
+  }));
 
-  const filteredMock = mockProjectsList.filter(proj => 
+  const filteredRows = rows.filter(proj => 
     proj.title.toLowerCase().includes(search.toLowerCase())
   );
+
+  const getApprovalColor = (approval) => {
+    switch (approval) {
+      case 'Approved': return 'bg-emerald-500';
+      case 'Pending': return 'bg-amber-500';
+      case 'Rejected': return 'bg-red-500';
+      default: return 'bg-slate-400';
+    }
+  };
+
+  const handleStatusChange = async (id, newStatusValue) => {
+    try {
+      await axiosInstance.put(`/vendor/projects/${id}`, { status: newStatusValue });
+    } catch (err) {
+      console.error('Failed to update project status:', err);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -455,7 +531,7 @@ export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddCl
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredMock.map((row) => (
+              {filteredRows.map((row, index) => (
                 <tr key={row.id} className="hover:bg-slate-50/50 transition bg-white">
                   <td className="p-3">
                     <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" />
@@ -467,22 +543,25 @@ export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddCl
                     </span>
                   </td>
                   <td className="p-3">
-                    <button type="button" className="px-3 py-1 bg-indigo-600 hover:bg-indigo-750 text-white rounded text-[10px] font-bold">
+                    <button type="button" className="px-3 py-1 bg-indigo-600 hover:bg-indigo-755 text-white rounded text-[10px] font-bold">
                       Manage
                     </button>
                   </td>
                   <td className="p-3">
-                    <span className="px-2.5 py-0.5 bg-emerald-500 text-white rounded-full text-[9px] font-bold uppercase">
+                    <span className={`px-2.5 py-0.5 ${getApprovalColor(row.approval)} text-white rounded-full text-[9px] font-bold uppercase`}>
                       {row.approval}
                     </span>
                   </td>
                   <td className="p-3">
                     <select 
                       defaultValue={row.status}
+                      onChange={(e) => handleStatusChange(row.id, e.target.value)}
                       className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-emerald-500 text-white border-0 focus:outline-none"
                     >
+                      <option value="Under Construction">Under Construction</option>
+                      <option value="Pre-launching">Pre-launching</option>
+                      <option value="Ready to Move">Ready to Move</option>
                       <option value="Complete">Complete</option>
-                      <option value="Ongoing">Ongoing</option>
                     </select>
                   </td>
                   <td className="p-3 text-right">
@@ -502,7 +581,7 @@ export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddCl
                   </td>
                 </tr>
               ))}
-              {filteredMock.length === 0 && (
+              {filteredRows.length === 0 && (
                 <tr>
                   <td colSpan="7" className="p-4 text-center text-slate-400">No projects found.</td>
                 </tr>
@@ -513,7 +592,7 @@ export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddCl
 
         {/* Footer pagination */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 text-xs text-slate-500 font-medium">
-          <span>Showing 1 to {filteredMock.length} of {mockProjectsList.length} entries</span>
+          <span>Showing 1 to {filteredRows.length} of {rows.length} entries</span>
           <div className="flex items-center space-x-1.5">
             <button className="px-3 py-1 bg-slate-100 rounded text-slate-700 cursor-not-allowed">Previous</button>
             <button className="px-3 py-1 bg-blue-600 text-white rounded font-bold">1</button>

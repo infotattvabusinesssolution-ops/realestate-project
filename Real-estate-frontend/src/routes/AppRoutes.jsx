@@ -10,6 +10,7 @@ import AdminDashboard from '../pages/AdminDashboard';
 import VendorDashboard from '../pages/VendorDashboard';
 import AgentDashboard from '../pages/AgentDashboard';
 import CustomerDashboard from '../pages/CustomerDashboard';
+import StripeCheckout from '../pages/StripeCheckout';
 
 export default function AppRoutes() {
   return (
@@ -24,6 +25,7 @@ export default function AppRoutes() {
       <Route path="/dashboard/vendor" element={<VendorDashboard />} />
       <Route path="/dashboard/agent" element={<AgentDashboard />} />
       <Route path="/dashboard/customer" element={<CustomerDashboard />} />
+      <Route path="/stripe-checkout" element={<StripeCheckout />} />
       <Route path="*" element={
         <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 text-slate-800">
           <h1 className="text-6xl font-extrabold text-blue-600 mb-4">404</h1>

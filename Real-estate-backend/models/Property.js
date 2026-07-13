@@ -33,13 +33,21 @@ const propertySchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    country: {
+      type: String,
+      default: '',
+    },
+    state: {
+      type: String,
+      default: '',
+    },
     beds: {
       type: Number,
-      required: [true, 'Please add number of bedrooms'],
+      default: 0,
     },
     baths: {
       type: Number,
-      required: [true, 'Please add number of bathrooms'],
+      default: 0,
     },
     area: {
       type: String,
@@ -48,6 +56,21 @@ const propertySchema = new mongoose.Schema(
     image: {
       type: String,
       default: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80',
+    },
+    galleryImages: [{
+      type: String,
+    }],
+    floorPlanImage: {
+      type: String,
+      default: '',
+    },
+    videoImage: {
+      type: String,
+      default: '',
+    },
+    videoUrl: {
+      type: String,
+      default: '',
     },
     tag: {
       type: String,
@@ -94,6 +117,40 @@ const propertySchema = new mongoose.Schema(
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
+    },
+    latitude: {
+      type: String,
+      default: '',
+    },
+    longitude: {
+      type: String,
+      default: '',
+    },
+    metaKeywords: {
+      type: String,
+      default: '',
+    },
+    metaDesc: {
+      type: String,
+      default: '',
+    },
+    features: [{
+      labelEn: { type: String, default: '' },
+      valueEn: { type: String, default: '' },
+      labelAr: { type: String, default: '' },
+      valueAr: { type: String, default: '' },
+    }],
+    titleAr: {
+      type: String,
+      default: '',
+    },
+    addressAr: {
+      type: String,
+      default: '',
+    },
+    descriptionAr: {
+      type: String,
+      default: '',
     },
   },
   {

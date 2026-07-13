@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Plus, ChevronDown } from 'lucide-react';
+import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddVendorAgentModal from '../modal/vendor/AddVendorAgentModal';
 import axiosInstance from '../../api/axiosInstance';
 
@@ -10,25 +10,26 @@ export function VendorAgentsTab() {
   const [loading, setLoading] = useState(true);
 
   // Fetch agents from API on mount
+  const fetchAgents = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get('/vendor/agents');
+      const normalized = res.data.map(a => ({
+        id: a._id,
+        username: a.username || a.name,
+        email: a.email,
+        avatar: a.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
+        status: a.status || 'Active',
+      }));
+      setAgents(normalized);
+    } catch (err) {
+      console.error('Failed to load agents:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        setLoading(true);
-        const res = await axiosInstance.get('/vendor/agents');
-        const normalized = res.data.map(a => ({
-          id: a._id,
-          username: a.username || a.name,
-          email: a.email,
-          avatar: a.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
-          status: a.status || 'Active',
-        }));
-        setAgents(normalized);
-      } catch (err) {
-        console.error('Failed to load agents:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAgents();
   }, []);
 
@@ -51,6 +52,25 @@ export function VendorAgentsTab() {
       setIsModalOpen(false);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to add agent');
+    }
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await axiosInstance.put(`/vendor/agents/${id}`, { status: newStatus });
+      setAgents(agents.map(a => a.id === id ? { ...a, status: newStatus } : a));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update agent status');
+    }
+  };
+
+  const handleDeleteAgent = async (id) => {
+    if (!confirm('Are you sure you want to remove this agent?')) return;
+    try {
+      await axiosInstance.delete(`/vendor/agents/${id}`);
+      setAgents(agents.filter(a => a.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete agent');
     }
   };
 
@@ -152,7 +172,8 @@ export function VendorAgentsTab() {
                       <td className="p-3 text-slate-550 font-medium">{agent.email}</td>
                       <td className="p-3">
                         <select 
-                          defaultValue={agent.status}
+                          value={agent.status}
+                          onChange={(e) => handleStatusChange(agent.id, e.target.value)}
                           className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-emerald-500 text-white border-0 focus:outline-none"
                         >
                           <option value="Active">Active</option>
@@ -160,9 +181,13 @@ export function VendorAgentsTab() {
                         </select>
                       </td>
                       <td className="p-3 text-right">
-                        <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1 inline-flex">
-                          <span>Select</span>
-                          <ChevronDown size={8} />
+                        <button 
+                          type="button" 
+                          onClick={() => handleDeleteAgent(agent.id)}
+                          className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"
+                          title="Delete Agent"
+                        >
+                          <Trash2 size={12} />
                         </button>
                       </td>
                     </tr>

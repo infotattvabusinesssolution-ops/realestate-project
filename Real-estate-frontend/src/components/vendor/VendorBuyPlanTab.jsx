@@ -4,21 +4,59 @@ import axiosInstance from '../../api/axiosInstance';
 export function VendorBuyPlanTab() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [purchasingId, setPurchasingId] = useState(null);
+  
+  // Dynamic current package state
+  const [currentPackage, setCurrentPackage] = useState({
+    name: 'Platinum',
+    status: 'Active',
+    term: 'Lifetime',
+  });
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [pkgRes, logsRes] = await Promise.all([
+        axiosInstance.get('/packages'),
+        axiosInstance.get('/vendor/payment-logs'),
+      ]);
+      
+      setPackages(pkgRes.data);
+
+      // Find the latest successful package payment log
+      const successfulPurchase = (logsRes.data || []).find(log => log.status === 'Success');
+      if (successfulPurchase && successfulPurchase.package) {
+        setCurrentPackage({
+          name: successfulPurchase.package.title || 'Standard',
+          status: 'Active',
+          term: successfulPurchase.package.term || 'Monthly',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPackages = async () => {
-      try {
-        setLoading(true);
-        const res = await axiosInstance.get('/packages');
-        setPackages(res.data);
-      } catch (err) {
-        console.error('Failed to load packages:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPackages();
+    fetchData();
   }, []);
+
+  // Purchase handler
+  const handleBuyPlan = async (planId, planName) => {
+    try {
+      setPurchasingId(planId);
+      const res = await axiosInstance.post('/vendor/create-checkout-session', {
+        packageId: planId,
+      });
+      // Redirect to simulated Stripe Checkout page
+      window.location.href = res.data.url;
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to initialize payment checkout session');
+      setPurchasingId(null);
+    }
+  };
 
   // Transform package data into display-friendly plans
   const plans = packages.map(pkg => ({
@@ -57,9 +95,9 @@ export function VendorBuyPlanTab() {
       {/* Status Bar */}
       <div className="bg-white rounded-xl border border-slate-200 px-6 py-4 flex items-center shadow-sm">
         <span className="text-xs font-bold text-slate-700">
-          Current Package: <span className="text-indigo-600">Platinum</span> 
+          Current Package: <span className="text-indigo-650 font-black">{currentPackage.name}</span> 
           <span className="ml-1.5 px-2 py-0.5 bg-indigo-500 text-white rounded-md text-[9px] font-extrabold uppercase">Active</span> 
-          <span className="ml-1 text-slate-400 font-medium">(Expire Date: Lifetime)</span>
+          <span className="ml-1 text-slate-400 font-medium">(Expire Date: {currentPackage.term === 'Lifetime' ? 'Lifetime' : 'Recurring'})</span>
         </span>
       </div>
 
@@ -103,10 +141,11 @@ export function VendorBuyPlanTab() {
               {/* Buy button */}
               <div className="p-6 pt-0 shrink-0">
                 <button 
-                  onClick={() => alert(`Purchasing ${plan.name} plan...`)}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-md shadow-blue-500/10"
+                  onClick={() => handleBuyPlan(plan._id, plan.name)}
+                  disabled={purchasingId !== null}
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-md shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Buy Now
+                  {purchasingId === plan._id ? 'Processing...' : 'Buy Now'}
                 </button>
               </div>
 

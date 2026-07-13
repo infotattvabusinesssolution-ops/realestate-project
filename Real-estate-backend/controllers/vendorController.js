@@ -71,23 +71,90 @@ export const getVendorProperties = async (req, res) => {
 // @access  Private/Vendor
 export const createVendorProperty = async (req, res) => {
   try {
-    const { name, price, type, address, beds, baths, area, tag, image } = req.body;
+    const {
+      name, price, type, address, beds, baths, area, tag, image,
+      propertyType, description, city, country, state,
+      videoUrl, latitude, longitude, assignedAgent,
+      amenities, category, features,
+      metaKeywords, metaDesc,
+      titleAr, addressAr, descriptionAr,
+    } = req.body;
 
-    const property = await Property.create({
+    const propertyData = {
       name,
       price,
-      type,
-      address,
-      beds,
-      baths,
-      area,
+      type: type === 'For Sell' ? 'Buy' : type === 'For Rent' ? 'Rent' : type,
+      address: address || '',
+      beds: Number(beds) || 0,
+      baths: Number(baths) || 0,
+      area: area || '',
       tag: tag || 'Property',
       image: image || undefined,
+      propertyType: propertyType || 'Residential',
+      description: description || '',
+      city: city || '',
+      country: country || '',
+      state: state || '',
+      videoUrl: videoUrl || '',
+      latitude: latitude || '',
+      longitude: longitude || '',
+      metaKeywords: metaKeywords || '',
+      metaDesc: metaDesc || '',
+      titleAr: titleAr || '',
+      addressAr: addressAr || '',
+      descriptionAr: descriptionAr || '',
       vendor: req.user._id,
-      status: 'Pending', // requires Admin approval
-    });
+      status: 'Pending',
+    };
+
+    // Optional references
+    if (assignedAgent) propertyData.assignedAgent = assignedAgent;
+    if (category) propertyData.category = category;
+    if (amenities && Array.isArray(amenities) && amenities.length > 0) {
+      propertyData.amenities = amenities;
+    }
+    if (features && Array.isArray(features) && features.length > 0) {
+      propertyData.features = features.filter(f => f.labelEn || f.valueEn);
+    }
+
+    const property = await Property.create(propertyData);
 
     res.status(201).json(property);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update a vendor property
+// @route   PUT /api/vendor/properties/:id
+// @access  Private/Vendor
+export const updateVendorProperty = async (req, res) => {
+  try {
+    const property = await Property.findOne({
+      _id: req.params.id,
+      vendor: req.user._id,
+    });
+
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found or not authorized' });
+    }
+
+    const updatableFields = [
+      'name', 'price', 'type', 'address', 'beds', 'baths', 'area', 'tag',
+      'image', 'propertyType', 'description', 'city', 'country', 'state',
+      'videoUrl', 'latitude', 'longitude', 'assignedAgent',
+      'amenities', 'category', 'features', 'isActive', 'isFeatured',
+      'metaKeywords', 'metaDesc', 'titleAr', 'addressAr', 'descriptionAr',
+    ];
+
+    updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        property[field] = req.body[field];
+      }
+    });
+
+    await property.save();
+    res.json(property);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -110,18 +177,114 @@ export const getVendorProjects = async (req, res) => {
 // @access  Private/Vendor
 export const createVendorProject = async (req, res) => {
   try {
-    const { name, location, units, status, image } = req.body;
+    const {
+      name, location, units, status, image,
+      minPrice, maxPrice, latitude, longitude, assignedAgent,
+      description, metaKeywords, metaDesc,
+      titleAr, addressAr, descriptionAr, features
+    } = req.body;
 
-    const project = await Project.create({
+    // Map status from frontend ('Complete', 'Incomplete', 'Ongoing') to backend enum values
+    let backendStatus = 'Under Construction';
+    if (status === 'Complete') {
+      backendStatus = 'Complete';
+    } else if (status === 'Incomplete' || status === 'Ongoing' || status === 'Under Construction') {
+      backendStatus = 'Under Construction';
+    }
+
+    const projectData = {
       name,
-      location,
-      units,
-      status,
+      location: location || '',
+      units: units || '10 Units',
+      status: backendStatus,
       image: image || undefined,
+      builder: req.user._id,
+      minPrice: minPrice || '',
+      maxPrice: maxPrice || '',
+      latitude: latitude || '',
+      longitude: longitude || '',
+      description: description || '',
+      metaKeywords: metaKeywords || '',
+      metaDesc: metaDesc || '',
+      titleAr: titleAr || '',
+      addressAr: addressAr || '',
+      descriptionAr: descriptionAr || '',
+    };
+
+    if (assignedAgent) projectData.assignedAgent = assignedAgent;
+
+    if (features && Array.isArray(features) && features.length > 0) {
+      projectData.features = features
+        .filter(f => f.labelEn || f.valueEn || f.label || f.value)
+        .map(f => ({
+          labelEn: f.labelEn || '',
+          valueEn: f.valueEn || '',
+          labelAr: f.labelAr || '',
+          valueAr: f.valueAr || '',
+          label: f.labelEn || f.label || '',
+          value: f.valueEn || f.value || '',
+        }));
+    }
+
+    const project = await Project.create(projectData);
+
+    res.status(201).json(project);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update a vendor project
+// @route   PUT /api/vendor/projects/:id
+// @access  Private/Vendor
+export const updateVendorProject = async (req, res) => {
+  try {
+    const project = await Project.findOne({
+      _id: req.params.id,
       builder: req.user._id,
     });
 
-    res.status(201).json(project);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found or not authorized' });
+    }
+
+    const updatableFields = [
+      'name', 'location', 'units', 'status', 'image', 'isActive', 'isFeatured',
+      'minPrice', 'maxPrice', 'latitude', 'longitude', 'assignedAgent',
+      'description', 'metaKeywords', 'metaDesc', 'titleAr', 'addressAr', 'descriptionAr',
+    ];
+
+    updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        if (field === 'status') {
+          let backendStatus = 'Under Construction';
+          if (req.body.status === 'Complete') {
+            backendStatus = 'Complete';
+          } else if (req.body.status === 'Incomplete' || req.body.status === 'Ongoing' || req.body.status === 'Under Construction') {
+            backendStatus = 'Under Construction';
+          }
+          project.status = backendStatus;
+        } else {
+          project[field] = req.body[field];
+        }
+      }
+    });
+
+    if (req.body.features && Array.isArray(req.body.features)) {
+      project.features = req.body.features
+        .filter(f => f.labelEn || f.valueEn || f.label || f.value)
+        .map(f => ({
+          labelEn: f.labelEn || '',
+          valueEn: f.valueEn || '',
+          labelAr: f.labelAr || '',
+          valueAr: f.valueAr || '',
+          label: f.labelEn || f.label || '',
+          value: f.valueEn || f.value || '',
+        }));
+    }
+
+    await project.save();
+    res.json(project);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -140,11 +303,73 @@ export const getVendorLeads = async (req, res) => {
 
     // Get messages related to these properties, populate sender info
     const leads = await Message.find({ property: { $in: propIds } })
-      .populate('sender', 'name email')
+      .populate('sender', 'name email phone')
       .populate('property', 'name price')
       .sort({ createdAt: -1 });
 
     res.json(leads);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a lead/message
+// @route   DELETE /api/vendor/leads/:id
+// @access  Private/Vendor
+export const deleteVendorLead = async (req, res) => {
+  try {
+    const vendorId = req.user._id;
+
+    // Verify the message belongs to a property owned by this vendor
+    const message = await Message.findById(req.params.id).populate('property');
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Check that the property belongs to this vendor (receiver is the vendor)
+    if (message.receiver.toString() !== vendorId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this message' });
+    }
+
+    await Message.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Message deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Reply to a lead/inquiry
+// @route   POST /api/vendor/leads/:id/reply
+// @access  Private/Vendor
+export const replyVendorLead = async (req, res) => {
+  try {
+    const vendorId = req.user._id;
+    const { text } = req.body;
+
+    // Find the original message
+    const originalMessage = await Message.findById(req.params.id);
+    if (!originalMessage) {
+      return res.status(404).json({ message: 'Original message not found' });
+    }
+
+    // Verify ownership
+    if (originalMessage.receiver.toString() !== vendorId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to reply to this message' });
+    }
+
+    // Create reply message (vendor is sender, original sender is receiver)
+    const replyMsg = await Message.create({
+      sender: vendorId,
+      receiver: originalMessage.sender,
+      property: originalMessage.property,
+      text,
+    });
+
+    const populated = await Message.findById(replyMsg._id)
+      .populate('sender', 'name email phone')
+      .populate('property', 'name price');
+
+    res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -363,6 +588,51 @@ export const createVendorAgent = async (req, res) => {
   }
 };
 
+// @desc    Update an agent status/details
+// @route   PUT /api/vendor/agents/:id
+// @access  Private/Vendor
+export const updateVendorAgent = async (req, res) => {
+  try {
+    const agent = await User.findOne({ _id: req.params.id, role: 'agent' });
+    if (!agent) {
+      return res.status(404).json({ message: 'Agent not found' });
+    }
+
+    const { status, phone, username } = req.body;
+    if (status !== undefined) agent.status = status;
+    if (phone !== undefined) agent.phone = phone;
+    if (username !== undefined) {
+      agent.username = username;
+      agent.name = username;
+    }
+
+    await agent.save();
+
+    const agentData = agent.toObject();
+    delete agentData.password;
+    res.json(agentData);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a vendor agent
+// @route   DELETE /api/vendor/agents/:id
+// @access  Private/Vendor
+export const deleteVendorAgent = async (req, res) => {
+  try {
+    const agent = await User.findOne({ _id: req.params.id, role: 'agent' });
+    if (!agent) {
+      return res.status(404).json({ message: 'Agent not found' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Agent removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Delete a vendor property
 // @route   DELETE /api/vendor/properties/:id
 // @access  Private/Vendor
@@ -400,6 +670,95 @@ export const deleteVendorProject = async (req, res) => {
 
     await Project.findByIdAndDelete(req.params.id);
     res.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Purchase/Subscribe to a package
+// @route   POST /api/vendor/purchase-package
+// @access  Private/Vendor
+export const purchasePackage = async (req, res) => {
+  try {
+    const { packageId, paymentMethod } = req.body;
+    
+    const pkg = await Package.findById(packageId);
+    if (!pkg) {
+      return res.status(404).json({ message: 'Package not found' });
+    }
+
+    const txnId = 'TXN-' + Math.floor(100000000 + Math.random() * 900000000);
+
+    const log = await PaymentLog.create({
+      txn: txnId,
+      user: req.user._id,
+      amount: pkg.price.startsWith('$') ? pkg.price : `$${pkg.price}`,
+      status: 'Success',
+      method: paymentMethod || 'Online Gateway',
+      package: pkg._id,
+    });
+
+    const populated = await PaymentLog.findById(log._id).populate('package', 'title');
+
+    res.status(201).json(populated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create Stripe checkout session (simulated)
+// @route   POST /api/vendor/create-checkout-session
+// @access  Private/Vendor
+export const createCheckoutSession = async (req, res) => {
+  try {
+    const { packageId } = req.body;
+    const pkg = await Package.findById(packageId);
+    if (!pkg) {
+      return res.status(404).json({ message: 'Package not found' });
+    }
+
+    const sessionId = 'cs_test_' + Math.floor(1000000000000 + Math.random() * 9000000000000).toString(16);
+    
+    // Construct the checkout URL on our frontend checkout simulation page
+    const checkoutUrl = `/stripe-checkout?session_id=${sessionId}&package_id=${pkg._id}&plan_name=${encodeURIComponent(pkg.title)}&price=${encodeURIComponent(pkg.price)}&term=${encodeURIComponent(pkg.term)}`;
+
+    res.json({ url: checkoutUrl, sessionId });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Verify checkout session and finalize purchase
+// @route   POST /api/vendor/verify-checkout-session
+// @access  Private/Vendor
+export const verifyCheckoutSession = async (req, res) => {
+  try {
+    const { sessionId, packageId } = req.body;
+    
+    // Check if payment log already exists for this transaction session to avoid duplicates
+    let existingLog = await PaymentLog.findOne({ txn: sessionId });
+    if (existingLog) {
+      const populated = await PaymentLog.findById(existingLog._id).populate('package', 'title');
+      return res.json({ success: true, log: populated });
+    }
+
+    const pkg = await Package.findById(packageId);
+    if (!pkg) {
+      return res.status(404).json({ message: 'Package not found' });
+    }
+
+    // Create a successful payment log
+    const log = await PaymentLog.create({
+      txn: sessionId,
+      user: req.user._id,
+      amount: pkg.price.startsWith('$') ? pkg.price : `$${pkg.price}`,
+      status: 'Success',
+      method: 'Stripe Credit Card',
+      package: pkg._id,
+    });
+
+    const populated = await PaymentLog.findById(log._id).populate('package', 'title');
+    res.json({ success: true, log: populated });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
