@@ -10,6 +10,7 @@ export default function VendorListTab({ setActiveTab }) {
   const [search, setSearch] = useState('');
   const [accDropdownId, setAccDropdownId] = useState(null);
   const [emailDropdownId, setEmailDropdownId] = useState(null);
+  const [actionDropdownId, setActionDropdownId] = useState(null);
 
   const fetchVendors = async () => {
     try {
@@ -17,7 +18,7 @@ export default function VendorListTab({ setActiveTab }) {
       const res = await axiosInstance.get('/admin/users?role=vendor');
       const normalized = res.data.map(v => ({
         id: v._id,
-        username: v.name,
+        username: v.username || v.name,
         email: v.email,
         phone: v.phone || '-',
         accountStatus: v.isActive ? 'Active' : 'Deactive',
@@ -28,6 +29,18 @@ export default function VendorListTab({ setActiveTab }) {
     } catch (err) {
       console.error('Error fetching admin vendors:', err);
       setLoading(false);
+    }
+  };
+
+  const handleDeleteVendor = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this vendor?')) return;
+    try {
+      await axiosInstance.delete(`/admin/users/${id}`);
+      setVendors(prev => prev.filter(v => v.id !== id));
+      setActionDropdownId(null);
+      alert('Vendor removed successfully');
+    } catch (err) {
+      alert('Failed to delete vendor: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -196,11 +209,24 @@ export default function VendorListTab({ setActiveTab }) {
                     )}
                   </td>
 
-                  <td className="p-3 text-right">
-                    <button className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition">
+                  <td className="p-3 text-right relative">
+                    <button
+                      onClick={() => setActionDropdownId(actionDropdownId === item.id ? null : item.id)}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-650 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition active:scale-95"
+                    >
                       <span>Select</span>
                       <ChevronDown size={8} />
                     </button>
+                    {actionDropdownId === item.id && (
+                      <div className="absolute right-3 mt-1 z-35 bg-white border border-slate-100 rounded-lg shadow-lg py-1 w-24 text-[10px] font-bold text-slate-700 text-left animate-in fade-in duration-200">
+                        <button
+                          onClick={() => handleDeleteVendor(item.id)}
+                          className="w-full text-left px-3 py-1.5 text-red-650 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

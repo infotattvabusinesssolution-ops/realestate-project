@@ -1,24 +1,36 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Edit } from 'lucide-react';
 import AddRoleModal from '../modal/admin/AddRoleModal';
-
-const initialRoles = [
-  { id: 1, name: 'Supervisor' },
-  { id: 2, name: 'Moderator' },
-  { id: 3, name: 'Admin' }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AdminRolesTab({ setActiveTab }) {
   const navigate = useNavigate();
-  const [roles, setRoles] = useState(initialRoles);
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const fetchRoles = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get('/admin/roles');
+      setRoles(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching admin roles:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(roles.map(r => r.id));
+      setSelectedIds(roles.map(r => r._id));
     } else {
       setSelectedIds([]);
     }
@@ -32,26 +44,41 @@ export default function AdminRolesTab({ setActiveTab }) {
     }
   };
 
-  const handleDelete = (id) => {
-    setRoles(roles.filter(r => r.id !== id));
-    setSelectedIds(selectedIds.filter(x => x !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    try {
+      await axiosInstance.delete(`/admin/roles/${id}`);
+      setRoles(roles.filter(r => r._id !== id));
+      setSelectedIds(selectedIds.filter(x => x !== id));
+      alert('Role deleted successfully');
+    } catch (err) {
+      alert('Failed to delete role');
+    }
   };
 
-  const handleAddRole = (newRole) => {
-    setRoles([
-      ...roles,
-      {
-        id: Date.now(),
-        name: newRole.name
-      }
-    ]);
-    setIsModalOpen(false);
+  const handleAddRole = async (newRole) => {
+    try {
+      const res = await axiosInstance.post('/admin/roles', { name: newRole.name });
+      setRoles([res.data, ...roles]);
+      setIsModalOpen(false);
+      alert('Role added successfully!');
+    } catch (err) {
+      alert('Failed to add role: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   const filteredRoles = useMemo(() => {
     if (!search) return roles;
-    return roles.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
+    return roles.filter(r => (r.name || '').toLowerCase().includes(search.toLowerCase()));
   }, [search, roles]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -126,12 +153,12 @@ export default function AdminRolesTab({ setActiveTab }) {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredRoles.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition bg-white">
+                <tr key={item._id} className="hover:bg-slate-50/50 transition bg-white">
                   <td className="p-3">
                     <input 
                       type="checkbox" 
-                      checked={selectedIds.includes(item.id)}
-                      onChange={(e) => handleSelectOne(item.id, e.target.checked)}
+                      checked={selectedIds.includes(item._id)}
+                      onChange={(e) => handleSelectOne(item._id, e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500" 
                     />
                   </td>
@@ -147,13 +174,9 @@ export default function AdminRolesTab({ setActiveTab }) {
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item._id)}
                         className="p-1.5 bg-red-500 hover:bg-red-650 text-white rounded transition"
                       >
                         <Trash2 size={10} />

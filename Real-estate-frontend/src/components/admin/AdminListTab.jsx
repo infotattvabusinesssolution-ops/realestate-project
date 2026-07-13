@@ -1,23 +1,37 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Settings } from 'lucide-react';
 import AddAdminModal from '../modal/admin/AddAdminModal';
-
-const initialAdmins = [
-  { id: 1, avatar: null, username: 'admin2', email: 'farhanbokkor11@gmail.com', role: 'Moderator', status: 'Active' }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AdminListTab({ setActiveTab }) {
   const navigate = useNavigate();
-  const [admins, setAdmins] = useState(initialAdmins);
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusDropdownId, setStatusDropdownId] = useState(null);
 
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get('/admin/admins');
+      setAdmins(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching admins:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(admins.map(a => a.id));
+      setSelectedIds(admins.map(a => a._id));
     } else {
       setSelectedIds([]);
     }
@@ -31,40 +45,57 @@ export default function AdminListTab({ setActiveTab }) {
     }
   };
 
-  const handleDelete = (id) => {
-    setAdmins(admins.filter(a => a.id !== id));
-    setSelectedIds(selectedIds.filter(x => x !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this admin?')) return;
+    try {
+      await axiosInstance.delete(`/admin/admins/${id}`);
+      setAdmins(admins.filter(a => a._id !== id));
+      setSelectedIds(selectedIds.filter(x => x !== id));
+      alert('Admin deleted successfully');
+    } catch (err) {
+      alert('Failed to delete admin');
+    }
   };
 
-  const handleAddAdmin = (newAdmin) => {
-    setAdmins([
-      ...admins,
-      {
-        id: Date.now(),
-        avatar: newAdmin.avatar,
-        username: newAdmin.username,
-        email: newAdmin.email,
-        role: newAdmin.role,
-        status: newAdmin.status
-      }
-    ]);
-    setIsModalOpen(false);
+  const handleAddAdmin = async (newAdmin) => {
+    try {
+      const res = await axiosInstance.post('/admin/admins', newAdmin);
+      setAdmins([res.data, ...admins]);
+      setIsModalOpen(false);
+      alert('Admin added successfully!');
+    } catch (err) {
+      alert('Failed to add admin: ' + (err.response?.data?.message || err.message));
+    }
   };
 
-  const handleStatusChange = (id, val) => {
-    setAdmins(prev => prev.map(a => a.id === id ? { ...a, status: val } : a));
-    setStatusDropdownId(null);
+  const handleStatusChange = async (id, val) => {
+    try {
+      await axiosInstance.put(`/admin/users/${id}/status`, { status: val });
+      setAdmins(prev => prev.map(a => a._id === id ? { ...a, status: val } : a));
+      setStatusDropdownId(null);
+      alert(`Admin status updated to ${val}`);
+    } catch (err) {
+      alert('Failed to update status');
+    }
   };
 
   const filteredAdmins = useMemo(() => {
     if (!search) return admins;
     const q = search.toLowerCase();
     return admins.filter(a => 
-      a.username.toLowerCase().includes(q) ||
-      a.email.toLowerCase().includes(q) ||
-      a.role.toLowerCase().includes(q)
+      (a.username || '').toLowerCase().includes(q) ||
+      (a.email || '').toLowerCase().includes(q) ||
+      ((a.adminRole || a.role) || '').toLowerCase().includes(q)
     );
   }, [search, admins]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -142,12 +173,12 @@ export default function AdminListTab({ setActiveTab }) {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredAdmins.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition bg-white">
+                <tr key={item._id} className="hover:bg-slate-50/50 transition bg-white">
                   <td className="p-3">
                     <input 
                       type="checkbox" 
-                      checked={selectedIds.includes(item.id)}
-                      onChange={(e) => handleSelectOne(item.id, e.target.checked)}
+                      checked={selectedIds.includes(item._id)}
+                      onChange={(e) => handleSelectOne(item._id, e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500" 
                     />
                   </td>
@@ -164,12 +195,12 @@ export default function AdminListTab({ setActiveTab }) {
                   <td className="p-3 font-semibold text-slate-600 hover:underline cursor-pointer">
                     <a href={`mailto:${item.email}`}>{item.email}</a>
                   </td>
-                  <td className="p-3 font-semibold text-slate-700">{item.role}</td>
+                  <td className="p-3 font-semibold text-slate-700">{item.adminRole || 'Admin'}</td>
                   
                   {/* Status Dropdown */}
                   <td className="p-3 relative">
                     <button
-                      onClick={() => setStatusDropdownId(statusDropdownId === item.id ? null : item.id)}
+                      onClick={() => setStatusDropdownId(statusDropdownId === item._id ? null : item._id)}
                       className={`inline-flex items-center space-x-1 px-3 py-1 rounded font-bold text-[10px] text-white transition ${
                         item.status === 'Active' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-650'
                       }`}
@@ -177,16 +208,16 @@ export default function AdminListTab({ setActiveTab }) {
                       <span>{item.status}</span>
                       <ChevronDown size={10} />
                     </button>
-                    {statusDropdownId === item.id && (
+                    {statusDropdownId === item._id && (
                       <div className="absolute left-3 mt-1 z-35 bg-white border border-slate-100 rounded-lg shadow-lg py-1 w-24 text-[10px] font-bold text-slate-700 animate-in fade-in duration-200">
                         <button
-                          onClick={() => handleStatusChange(item.id, 'Active')}
+                          onClick={() => handleStatusChange(item._id, 'Active')}
                           className="w-full text-left px-3 py-1.5 hover:bg-slate-50"
                         >
                           Active
                         </button>
                         <button
-                          onClick={() => handleStatusChange(item.id, 'Deactive')}
+                          onClick={() => handleStatusChange(item._id, 'Deactive')}
                           className="w-full text-left px-3 py-1.5 hover:bg-slate-50"
                         >
                           Deactive
@@ -197,13 +228,9 @@ export default function AdminListTab({ setActiveTab }) {
 
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item._id)}
                         className="p-1.5 bg-red-500 hover:bg-red-650 text-white rounded transition"
                       >
                         <Trash2 size={10} />

@@ -1,32 +1,37 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddFAQModal from '../modal/admin/AddFAQModal';
-
-const initialFAQs = [
-  { id: 10, question: 'What safety measures are in place to prevent fraud...', serialNumber: 10 },
-  { id: 9, question: 'Are there any tips for taking appealing car photos...', serialNumber: 9 },
-  { id: 8, question: 'What happens if my property sells or rents through...', serialNumber: 8 },
-  { id: 7, question: 'How do I communicate with potential buyers?', serialNumber: 7 },
-  { id: 6, question: "Can I edit my listing after it's live?", serialNumber: 6 },
-  { id: 5, question: 'How long will my property listing be active?', serialNumber: 5 },
-  { id: 4, question: 'What type of information should I include in my pr...', serialNumber: 4 },
-  { id: 3, question: 'Is there a fee for listing my property on your pla...', serialNumber: 3 },
-  { id: 2, question: 'Can I list multiple properties under one account?', serialNumber: 2 },
-  { id: 1, question: 'How do I list my property on your website?', serialNumber: 1 }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export default function FAQManagementTab() {
   const navigate = useNavigate();
-  const [faqs, setFaqs] = useState(initialFAQs);
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [lang, setLang] = useState('English');
   const [selectedIds, setSelectedIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const fetchFAQs = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get(`/admin/faqs?lang=${lang}`);
+      setFaqs(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching FAQs:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFAQs();
+  }, [lang]);
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(faqs.map(f => f.id));
+      setSelectedIds(faqs.map(f => f._id));
     } else {
       setSelectedIds([]);
     }
@@ -40,27 +45,41 @@ export default function FAQManagementTab() {
     }
   };
 
-  const handleDelete = (id) => {
-    setFaqs(faqs.filter(f => f.id !== id));
-    setSelectedIds(selectedIds.filter(x => x !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this FAQ?')) return;
+    try {
+      await axiosInstance.delete(`/admin/faqs/${id}`);
+      setFaqs(faqs.filter(f => f._id !== id));
+      setSelectedIds(selectedIds.filter(x => x !== id));
+      alert('FAQ deleted successfully');
+    } catch (err) {
+      alert('Failed to delete FAQ');
+    }
   };
 
-  const handleAddFAQ = (newFaq) => {
-    setFaqs([
-      {
-        id: Date.now(),
-        question: newFaq.question,
-        serialNumber: newFaq.serialNumber
-      },
-      ...faqs
-    ]);
-    setIsModalOpen(false);
+  const handleAddFAQ = async (newFaq) => {
+    try {
+      const res = await axiosInstance.post('/admin/faqs', newFaq);
+      setFaqs([res.data, ...faqs]);
+      setIsModalOpen(false);
+      alert('FAQ added successfully!');
+    } catch (err) {
+      alert('Failed to add FAQ: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   const filteredFAQs = useMemo(() => {
     if (!search) return faqs;
-    return faqs.filter(f => f.question.toLowerCase().includes(search.toLowerCase()));
+    return faqs.filter(f => (f.question || '').toLowerCase().includes(search.toLowerCase()));
   }, [search, faqs]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -143,12 +162,12 @@ export default function FAQManagementTab() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredFAQs.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                <tr key={item._id} className="hover:bg-slate-50/50 transition">
                   <td className="p-3">
                     <input 
                       type="checkbox" 
-                      checked={selectedIds.includes(item.id)}
-                      onChange={(e) => handleSelectOne(item.id, e.target.checked)}
+                      checked={selectedIds.includes(item._id)}
+                      onChange={(e) => handleSelectOne(item._id, e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500" 
                     />
                   </td>
@@ -156,13 +175,9 @@ export default function FAQManagementTab() {
                   <td className="p-3 font-semibold text-slate-700">{item.serialNumber}</td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item._id)}
                         className="p-1.5 bg-red-500 hover:bg-red-650 text-white rounded transition"
                       >
                         <Trash2 size={10} />

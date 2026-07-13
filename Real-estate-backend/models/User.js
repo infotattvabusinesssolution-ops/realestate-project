@@ -7,6 +7,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please add a name'],
     },
+    username: {
+      type: String,
+      default: '',
+    },
     email: {
       type: String,
       required: [true, 'Please add an email'],
@@ -78,6 +82,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['Active', 'Inactive', 'Deactive'],
       default: 'Active',
+    },
+    adminRole: {
+      type: String,
+      default: '',
     },
     isActive: {
       type: Boolean,

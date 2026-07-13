@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Home, ArrowLeft, Image as ImageIcon, Bold, Italic, Underline, Strikethrough,
   Link as LinkIcon, Image, Film, Table, AlignLeft, AlignCenter,
   AlignRight, AlignJustify, List, ListOrdered, Code, Maximize2, HelpCircle, Globe
 } from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
 
 export default function BlogPostAddTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -19,16 +20,46 @@ export default function BlogPostAddTab({ setActiveTab }) {
   const [metaDescription, setMetaDescription] = useState('');
   const [cloneArabic, setCloneArabic] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [categoriesList, setCategoriesList] = useState([]);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axiosInstance.get('/admin/blog/categories');
+        setCategoriesList(res.data);
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!serialNumber || !status || !title || !category || !author || !content) {
       alert('Please fill out all required fields.');
       return;
     }
-    // Mock save
-    alert('Blog post saved successfully!');
-    setActiveTab('blog-posts');
+
+    try {
+      const payload = {
+        serialNumber: parseInt(serialNumber, 10) || 0,
+        status,
+        title,
+        category,
+        author,
+        content,
+        metaKeywords,
+        metaDescription,
+        language: cloneArabic ? 'Arabic' : 'English',
+        image: imagePreview || undefined
+      };
+      await axiosInstance.post('/admin/blog/posts', payload);
+      alert('Blog post saved successfully!');
+      setActiveTab('blog-posts');
+    } catch (err) {
+      alert('Failed to save blog post: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   return (
@@ -103,7 +134,7 @@ export default function BlogPostAddTab({ setActiveTab }) {
                   value={serialNumber}
                   onChange={(e) => setSerialNumber(e.target.value)}
                   placeholder="Enter Serial Number"
-                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full"
+                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-850 focus:outline-none w-full"
                   required
                 />
                 <span className="text-[10px] text-amber-600 font-medium">
@@ -156,10 +187,9 @@ export default function BlogPostAddTab({ setActiveTab }) {
                 required
               >
                 <option value="">Select Category</option>
-                <option value="Renting and Leasing">Renting and Leasing</option>
-                <option value="Market Trends and Analysis">Market Trends and Analysis</option>
-                <option value="Legal and Financial Advice">Legal and Financial Advice</option>
-                <option value="Buying Guides">Buying Guides</option>
+                {categoriesList.map(c => (
+                  <option key={c._id} value={c.name}>{c.name}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -212,8 +242,8 @@ export default function BlogPostAddTab({ setActiveTab }) {
                 <span className="w-px h-4 bg-slate-200 mx-1"></span>
                 
                 <button type="button" className="p-1 hover:bg-slate-200 rounded text-slate-500"><Code size={13} /></button>
-                <button type="button" className="p-1 hover:bg-slate-200 rounded text-slate-500"><Maximize2 size={13} /></button>
-                <button type="button" className="p-1 hover:bg-slate-200 rounded text-slate-500"><HelpCircle size={13} /></button>
+                <button type="button" className="p-1 hover:bg-slate-200 rounded text-slate-550"><Maximize2 size={13} /></button>
+                <button type="button" className="p-1 hover:bg-slate-200 rounded text-slate-550"><HelpCircle size={13} /></button>
               </div>
               
               {/* Text Area */}

@@ -9,6 +9,7 @@ export default function UsersManagementTab({ setActiveTab }) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusDropdownId, setStatusDropdownId] = useState(null);
+  const [actionDropdownId, setActionDropdownId] = useState(null);
 
   const fetchUsers = async () => {
     try {
@@ -17,7 +18,7 @@ export default function UsersManagementTab({ setActiveTab }) {
       const normalized = res.data.map(u => ({
         id: u._id,
         name: u.name,
-        username: u.name,
+        username: u.username || u.name,
         email: u.email,
         emailStatus: 'Verified',
         accountStatus: u.isActive ? 'Active' : 'Deactive'
@@ -27,6 +28,18 @@ export default function UsersManagementTab({ setActiveTab }) {
     } catch (err) {
       console.error('Error fetching admin users:', err);
       setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await axiosInstance.delete(`/admin/users/${id}`);
+      setUsers(prev => prev.filter(u => u.id !== id));
+      setActionDropdownId(null);
+      alert('User removed successfully');
+    } catch (err) {
+      alert('Failed to delete user: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -168,11 +181,24 @@ export default function UsersManagementTab({ setActiveTab }) {
                   </td>
 
                   {/* Actions */}
-                  <td className="p-3 text-right">
-                    <button className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition">
+                  <td className="p-3 text-right relative">
+                    <button
+                      onClick={() => setActionDropdownId(actionDropdownId === user.id ? null : user.id)}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-650 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition active:scale-95"
+                    >
                       <span>Select</span>
                       <ChevronDown size={8} />
                     </button>
+                    {actionDropdownId === user.id && (
+                      <div className="absolute right-3 mt-1 z-35 bg-white border border-slate-100 rounded-lg shadow-lg py-1 w-24 text-[10px] font-bold text-slate-700 text-left animate-in fade-in duration-200">
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="w-full text-left px-3 py-1.5 text-red-650 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

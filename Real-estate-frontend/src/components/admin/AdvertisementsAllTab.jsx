@@ -1,28 +1,36 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Image as ImageIcon } from 'lucide-react';
 import AddAdvertisementModal from '../modal/admin/AddAdvertisementModal';
-
-const initialAds = [
-  { id: 1, adType: 'Banner', resolution: '728 x 90', views: 36, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
-  { id: 2, adType: 'Banner', resolution: '300 x 250', views: 1, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
-  { id: 3, adType: 'Banner', resolution: '300 x 600', views: 18, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
-  { id: 4, adType: 'Banner', resolution: '300 x 250', views: 2, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
-  { id: 5, adType: 'Banner', resolution: '300 x 250', views: 1, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
-  { id: 6, adType: 'Banner', resolution: '300 x 600', views: 23, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
-  { id: 7, adType: 'Banner', resolution: '728 x 90', views: 52, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AdvertisementsAllTab({ setActiveTab }) {
   const navigate = useNavigate();
-  const [ads, setAds] = useState(initialAds);
+  const [ads, setAds] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const fetchAds = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get('/admin/advertisements');
+      setAds(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching advertisements:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAds();
+  }, []);
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(ads.map(ad => ad.id));
+      setSelectedIds(ads.map(ad => ad._id));
     } else {
       setSelectedIds([]);
     }
@@ -36,32 +44,44 @@ export default function AdvertisementsAllTab({ setActiveTab }) {
     }
   };
 
-  const handleDelete = (id) => {
-    setAds(ads.filter(ad => ad.id !== id));
-    setSelectedIds(selectedIds.filter(x => x !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this advertisement?')) return;
+    try {
+      await axiosInstance.delete(`/admin/advertisements/${id}`);
+      setAds(ads.filter(ad => ad._id !== id));
+      setSelectedIds(selectedIds.filter(x => x !== id));
+      alert('Advertisement deleted successfully');
+    } catch (err) {
+      alert('Failed to delete advertisement');
+    }
   };
 
-  const handleAddAd = (newAd) => {
-    setAds([
-      ...ads,
-      {
-        id: Date.now(),
-        adType: newAd.adType,
-        resolution: newAd.resolution,
-        views: 0,
-        img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80'
-      }
-    ]);
-    setIsModalOpen(false);
+  const handleAddAd = async (newAd) => {
+    try {
+      const res = await axiosInstance.post('/admin/advertisements', newAd);
+      setAds([res.data, ...ads]);
+      setIsModalOpen(false);
+      alert('Advertisement added successfully!');
+    } catch (err) {
+      alert('Failed to add advertisement: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   const filteredAds = useMemo(() => {
     if (!search) return ads;
     return ads.filter(ad => 
-      ad.adType.toLowerCase().includes(search.toLowerCase()) ||
-      ad.resolution.toLowerCase().includes(search.toLowerCase())
+      (ad.adType || '').toLowerCase().includes(search.toLowerCase()) ||
+      (ad.resolution || '').toLowerCase().includes(search.toLowerCase())
     );
   }, [search, ads]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -138,12 +158,12 @@ export default function AdvertisementsAllTab({ setActiveTab }) {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredAds.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition bg-white">
+                <tr key={item._id} className="hover:bg-slate-50/50 transition bg-white">
                   <td className="p-3">
                     <input 
                       type="checkbox" 
-                      checked={selectedIds.includes(item.id)}
-                      onChange={(e) => handleSelectOne(item.id, e.target.checked)}
+                      checked={selectedIds.includes(item._id)}
+                      onChange={(e) => handleSelectOne(item._id, e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500" 
                     />
                   </td>
@@ -159,14 +179,10 @@ export default function AdvertisementsAllTab({ setActiveTab }) {
                   <td className="p-3 font-semibold text-slate-700">{item.views}</td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
-                        onClick={() => handleDelete(item.id)}
-                        className="p-1.5 bg-red-500 hover:bg-red-650 text-white rounded transition"
+                        onClick={() => handleDelete(item._id)}
+                        className="p-1.5 bg-red-500 hover:bg-red-650 text-white rounded transition animate-in zoom-in duration-200"
                       >
                         <Trash2 size={10} />
                       </button>

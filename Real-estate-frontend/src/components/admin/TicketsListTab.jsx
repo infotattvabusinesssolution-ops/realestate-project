@@ -2,12 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ChevronDown } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
+import AdminTicketDetailView from './AdminTicketDetailView';
 
 export default function TicketsListTab({ setActiveTab, filterType }) {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusDropdownId, setStatusDropdownId] = useState(null);
+  const [actionDropdownId, setActionDropdownId] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   const fetchTickets = async () => {
     try {
@@ -61,6 +64,18 @@ export default function TicketsListTab({ setActiveTab, filterType }) {
     if (status === 'Closed') return 'bg-red-500 hover:bg-red-650';
     return 'bg-blue-500 hover:bg-blue-650'; // Pending
   };
+
+  if (selectedTicket) {
+    return (
+      <AdminTicketDetailView 
+        ticket={selectedTicket} 
+        onBack={() => {
+          setSelectedTicket(null);
+          fetchTickets();
+        }} 
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -165,11 +180,27 @@ export default function TicketsListTab({ setActiveTab, filterType }) {
 
                   <td className="p-3 font-semibold text-slate-650">{item.staff}</td>
 
-                  <td className="p-3 text-right">
-                    <button className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition">
+                  <td className="p-3 text-right relative">
+                    <button
+                      onClick={() => setActionDropdownId(actionDropdownId === item.id ? null : item.id)}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-650 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition active:scale-95"
+                    >
                       <span>Select</span>
                       <ChevronDown size={8} />
                     </button>
+                    {actionDropdownId === item.id && (
+                      <div className="absolute right-3 mt-1 z-35 bg-white border border-slate-100 rounded-lg shadow-lg py-1 w-28 text-[10px] font-bold text-slate-700 text-left animate-in fade-in duration-200">
+                        <button
+                          onClick={() => {
+                            setSelectedTicket(item);
+                            setActionDropdownId(null);
+                          }}
+                          className="w-full text-left px-3 py-1.5 hover:bg-slate-50 hover:text-indigo-600"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

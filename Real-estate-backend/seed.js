@@ -7,6 +7,12 @@ import Project from './models/Project.js';
 import Ticket from './models/Ticket.js';
 import Message from './models/Message.js';
 import Category from './models/Category.js';
+import BlogCategory from './models/BlogCategory.js';
+import BlogPost from './models/BlogPost.js';
+import FAQ from './models/FAQ.js';
+import Advertisement from './models/Advertisement.js';
+import AnnouncementPopup from './models/AnnouncementPopup.js';
+import AdminRole from './models/AdminRole.js';
 import Amenity from './models/Amenity.js';
 import Country from './models/Country.js';
 import State from './models/State.js';
@@ -50,16 +56,32 @@ const seedData = async () => {
     await OnlineGateway.deleteMany();
     await OfflineGateway.deleteMany();
     await Language.deleteMany();
+    await BlogCategory.deleteMany();
+    await BlogPost.deleteMany();
+    await FAQ.deleteMany();
+    await Advertisement.deleteMany();
+    await AnnouncementPopup.deleteMany();
+    await AdminRole.deleteMany();
     console.log('Database cleared!');
 
     // 2. Create Users
     const plainPassword = 'password123';
+
+    // Seed Admin Roles
+    const roles = [
+      { name: 'Supervisor', permissions: ['dashboard', 'properties', 'agents'] },
+      { name: 'Moderator', permissions: ['properties', 'blog', 'support'] },
+      { name: 'Admin', permissions: ['dashboard', 'properties', 'agents', 'blog', 'support', 'settings'] }
+    ];
+    await AdminRole.insertMany(roles);
+    console.log('Admin roles seeded!');
 
     const admin = new User({
       name: 'Leonard Bourne',
       email: 'leonard@estacy.com',
       password: plainPassword,
       role: 'admin',
+      adminRole: 'Admin',
       phone: '+1-555-0199',
       city: 'Los Angeles',
       state: 'California',
@@ -69,6 +91,21 @@ const seedData = async () => {
       rating: '4.9★',
       experience: '12 Years',
       specialization: 'Commercial Real Estate'
+    });
+
+    const moderator = new User({
+      name: 'Farhan Bokkor',
+      username: 'admin2',
+      email: 'farhanbokkor11@gmail.com',
+      password: plainPassword,
+      role: 'admin',
+      adminRole: 'Moderator',
+      phone: '+1-555-0200',
+      city: 'Chicago',
+      state: 'Illinois',
+      zip: '60601',
+      address: '100 North Michigan Ave',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
     });
 
     const vendor = new User({
@@ -121,6 +158,7 @@ const seedData = async () => {
     });
 
     await admin.save();
+    await moderator.save();
     await vendor.save();
     await agent.save();
     await customer.save();
@@ -355,7 +393,7 @@ const seedData = async () => {
         user: customer._id,
         title: 'Need advice on mortgage rates calculation',
         urgency: 'Medium',
-        status: 'In Progress',
+        status: 'Pending',
         responses: [
           {
             sender: customer._id,
@@ -593,6 +631,71 @@ const seedData = async () => {
     ];
     await Subscriber.insertMany(subscribersList);
     console.log('Subscribers seeded!');
+
+    // Seed Blog Categories
+    const blogCategories = [
+      { name: 'Market Trends and Analysis', status: 'Active', serialNumber: 4, language: 'English' },
+      { name: 'Renting and Leasing', status: 'Active', serialNumber: 3, language: 'English' },
+      { name: 'Legal and Financial Advice', status: 'Active', language: 'English', serialNumber: 2 },
+      { name: 'Buying Guides', status: 'Active', language: 'English', serialNumber: 1 }
+    ];
+    await BlogCategory.insertMany(blogCategories);
+    console.log('Blog categories seeded!');
+
+    // Seed Blog Posts
+    const blogPosts = [
+      { title: 'Understanding Lease Agreements: What Every Tenant Should Know', category: 'Renting and Leasing', content: 'Lease agreements can be complex. Understanding the clauses is key for both parties.', author: 'Leonard Bourne', status: 'Deactive', serialNumber: 7, language: 'English' },
+      { title: 'How Economic Changes Are Impacting the Housing Market', category: 'Market Trends and Analysis', content: 'With changing interest rates, the buyer power in major cities shifts.', author: 'Leonard Bourne', status: 'Active', serialNumber: 6, language: 'English' },
+      { title: 'How to Handle Tenant Issues: A Guide for Landlords', category: 'Renting and Leasing', content: 'Tips and legal recommendations for communication and problem-solving.', author: 'Leonard Bourne', status: 'Active', serialNumber: 5, language: 'English' },
+      { title: 'How to Choose the Right Homeowners Insurance Policy', category: 'Legal and Financial Advice', content: 'Understanding coverages helps safeguard your assets.', author: 'Leonard Bourne', status: 'Active', serialNumber: 4, language: 'English' },
+      { title: 'Legal Pitfalls to Avoid in Real Estate Transactions', category: 'Legal and Financial Advice', content: 'Avoiding common mistakes during contract reviews.', author: 'Leonard Bourne', status: 'Active', serialNumber: 3, language: 'English' },
+      { title: "First-Time Homebuyers' Guide: 10 Essential Tips for Success", category: 'Buying Guides', content: 'A step-by-step checklist on preparation, agents, and financing.', author: 'Leonard Bourne', status: 'Active', serialNumber: 2, language: 'English' },
+      { title: 'Navigating Mortgage Options: Fixed vs. Adjustable Rates Explained', category: 'Buying Guides', content: 'Explaining pros and cons of fixed vs adjustable interest rates.', author: 'Leonard Bourne', status: 'Active', serialNumber: 1, language: 'English' }
+    ];
+    await BlogPost.insertMany(blogPosts);
+    console.log('Blog posts seeded!');
+
+    // Seed FAQs
+    const faqs = [
+      { question: 'What safety measures are in place to prevent fraud...', answer: 'We verify each vendor and support secure payment channels.', serialNumber: 10, language: 'English' },
+      { question: 'Are there any tips for taking appealing car photos...', answer: 'Ensure good lighting and capture multiple angles.', serialNumber: 9, language: 'English' },
+      { question: 'What happens if my property sells or rents through...', answer: 'You can easily update status or archive the listing.', serialNumber: 8, language: 'English' },
+      { question: 'How do I communicate with potential buyers?', answer: 'Use the integrated chat system on the client dashboard.', serialNumber: 7, language: 'English' },
+      { question: "Can I edit my listing after it's live?", answer: 'Yes, go to your property settings and edit details anytime.', serialNumber: 6, language: 'English' },
+      { question: 'How long will my property listing be active?', answer: 'Listings are active for 30 days unless extended.', serialNumber: 5, language: 'English' },
+      { question: 'What type of information should I include in my pr...', answer: 'Provide layout sqft, pricing, neighborhood details, and high-quality pictures.', serialNumber: 4, language: 'English' },
+      { question: 'Is there a fee for listing my property on your pla...', answer: 'Standard listings are free; premium upgrades are available.', serialNumber: 3, language: 'English' },
+      { question: 'Can I list multiple properties under one account?', answer: 'Yes, vendors can manage multiple listings in their dashboard.', serialNumber: 2, language: 'English' },
+      { question: 'How do I list my property on your website?', answer: 'Click Add Property on your dashboard and fill out details.', serialNumber: 1, language: 'English' }
+    ];
+    await FAQ.insertMany(faqs);
+    console.log('FAQs seeded!');
+
+    // Seed Advertisements
+    const ads = [
+      { adType: 'Banner', resolution: '728 x 90', views: 36, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
+      { adType: 'Banner', resolution: '300 x 250', views: 1, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
+      { adType: 'Banner', resolution: '300 x 600', views: 18, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
+      { adType: 'Banner', resolution: '300 x 250', views: 2, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
+      { adType: 'Banner', resolution: '300 x 250', views: 1, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
+      { adType: 'Banner', resolution: '300 x 600', views: 23, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' },
+      { adType: 'Banner', resolution: '728 x 90', views: 52, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80' }
+    ];
+    await Advertisement.insertMany(ads);
+    console.log('Advertisements seeded!');
+
+    // Seed Announcement Popups
+    const popups = [
+      { type: 'Type - 7', name: 'Flash Deals', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Active', serialNumber: 7, bgColor: '#ff4d4f', bgOpacity: 0.9, title: 'Winter Deals Are Active Now!', text: 'Save up to 40% on rental agreements this season.', delay: 3, language: 'English' },
+      { type: 'Type - 6', name: 'Countdown Popup', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 6, bgColor: '#1890ff', bgOpacity: 0.8, title: 'Flash Sale countdown!', text: 'Offer ends in 2 hours.', delay: 5, language: 'English' },
+      { type: 'Type - 5', name: 'Final Popup', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Active', serialNumber: 5, bgColor: '#52c41a', bgOpacity: 0.95, title: 'Don\'t miss our latest updates!', text: 'Subscribe to our newsletter for exclusive offers.', delay: 1, language: 'English' },
+      { type: 'Type - 4', name: 'Winter Offer', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 4, bgColor: '#faad14', bgOpacity: 0.85, title: 'Cold Season Discount!', text: 'Apply coupon cold20 at checkout.', delay: 10, language: 'English' },
+      { type: 'Type - 3', name: 'Summer Offer', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 3, bgColor: '#eb2f96', bgOpacity: 0.75, title: 'Summer Vacations Start Here', text: 'Browse luxury resorts near you.', delay: 2, language: 'English' },
+      { type: 'Type - 2', name: 'Month End Sale', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 2, bgColor: '#722ed1', bgOpacity: 0.9, title: 'Month End Sale has started!', text: 'Find commercial spaces at lower rates.', delay: 4, language: 'English' },
+      { type: 'Type - 1', name: 'Black Friday', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 1, bgColor: '#1f1f1f', bgOpacity: 1.0, title: 'Black Friday special listings!', text: 'Get 50% discount on agent fee.', delay: 0, language: 'English' }
+    ];
+    await AnnouncementPopup.insertMany(popups);
+    console.log('Announcement popups seeded!');
 
     // 17. Seed Online Gateway
     await OnlineGateway.create({

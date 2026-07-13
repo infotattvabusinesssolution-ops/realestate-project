@@ -39,6 +39,7 @@ export default function VendorAddTab({ setActiveTab }) {
     try {
       const payload = {
         name,
+        username,
         email,
         password,
         role: 'vendor',

@@ -1,16 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home } from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AdvertisementsSettingsTab({ setActiveTab }) {
   const navigate = useNavigate();
   const [publisherId, setPublisherId] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleUpdate = (e) => {
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const res = await axiosInstance.get('/admin/settings');
+        setPublisherId(res.data.adsensePublisherId || '');
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to load advertisements settings:', err);
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!publisherId) return;
-    alert('Google AdSense Publisher ID updated successfully!');
+    try {
+      await axiosInstance.put('/admin/settings', { adsensePublisherId: publisherId });
+      alert('Google AdSense Publisher ID updated successfully!');
+    } catch (err) {
+      alert('Failed to update Google AdSense Publisher ID: ' + (err.response?.data?.message || err.message));
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

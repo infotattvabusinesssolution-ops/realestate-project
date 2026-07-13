@@ -129,3 +129,38 @@ export const addKeyword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Get language keywords
+// @route   GET /api/admin/languages/:id/keywords
+export const getLanguageKeywords = async (req, res) => {
+  try {
+    const lang = await Language.findById(req.params.id);
+    if (!lang) {
+      return res.status(404).json({ message: 'Language not found' });
+    }
+    res.json(lang.keywords || {});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update language keywords
+// @route   PUT /api/admin/languages/:id/keywords
+export const updateLanguageKeywords = async (req, res) => {
+  try {
+    const lang = await Language.findById(req.params.id);
+    if (!lang) {
+      return res.status(404).json({ message: 'Language not found' });
+    }
+
+    const { keywords } = req.body;
+    if (keywords) {
+      lang.keywords = keywords;
+    }
+
+    await lang.save();
+    res.json({ message: 'Keywords updated successfully', keywords: lang.keywords });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

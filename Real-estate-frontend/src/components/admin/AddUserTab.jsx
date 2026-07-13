@@ -32,6 +32,7 @@ export default function AddUserTab({ setActiveTab }) {
     try {
       const payload = {
         name,
+        username,
         email,
         password,
         role: 'customer',

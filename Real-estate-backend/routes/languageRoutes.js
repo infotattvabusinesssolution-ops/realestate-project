@@ -6,6 +6,8 @@ import {
   deleteLanguage,
   makeDefaultLanguage,
   addKeyword,
+  getLanguageKeywords,
+  updateLanguageKeywords,
 } from '../controllers/languageController.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 
@@ -25,5 +27,9 @@ router.route('/:id')
   .delete(deleteLanguage);
 
 router.put('/:id/default', makeDefaultLanguage);
+
+router.route('/:id/keywords')
+  .get(getLanguageKeywords)
+  .put(updateLanguageKeywords);
 
 export default router;

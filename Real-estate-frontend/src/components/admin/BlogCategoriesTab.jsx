@@ -1,26 +1,37 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddBlogCategoryModal from '../modal/admin/AddBlogCategoryModal';
-
-const initialCategories = [
-  { id: 1, name: 'Market Trends and Analysis', status: 'Active', serialNumber: 4 },
-  { id: 2, name: 'Renting and Leasing', status: 'Active', serialNumber: 3 },
-  { id: 3, name: 'Legal and Financial Advice', status: 'Active', serialNumber: 2 },
-  { id: 4, name: 'Buying Guides', status: 'Active', serialNumber: 1 }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export default function BlogCategoriesTab() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [lang, setLang] = useState('English');
   const [selectedIds, setSelectedIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get(`/admin/blog/categories?lang=${lang}`);
+      setCategories(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching blog categories:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, [lang]);
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(categories.map(c => c.id));
+      setSelectedIds(categories.map(c => c._id));
     } else {
       setSelectedIds([]);
     }
@@ -34,28 +45,41 @@ export default function BlogCategoriesTab() {
     }
   };
 
-  const handleDelete = (id) => {
-    setCategories(categories.filter(c => c.id !== id));
-    setSelectedIds(selectedIds.filter(x => x !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    try {
+      await axiosInstance.delete(`/admin/blog/categories/${id}`);
+      setCategories(categories.filter(c => c._id !== id));
+      setSelectedIds(selectedIds.filter(x => x !== id));
+      alert('Category deleted successfully');
+    } catch (err) {
+      alert('Failed to delete category');
+    }
   };
 
-  const handleAddCategory = (newCat) => {
-    setCategories([
-      ...categories,
-      {
-        id: Date.now(),
-        name: newCat.name,
-        status: newCat.status,
-        serialNumber: newCat.serialNumber
-      }
-    ]);
-    setIsModalOpen(false);
+  const handleAddCategory = async (newCat) => {
+    try {
+      const res = await axiosInstance.post('/admin/blog/categories', newCat);
+      setCategories([...categories, res.data]);
+      setIsModalOpen(false);
+      alert('Category added successfully!');
+    } catch (err) {
+      alert('Failed to add category: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   const filteredCategories = useMemo(() => {
     if (!search) return categories;
     return categories.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
   }, [search, categories]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -141,31 +165,29 @@ export default function BlogCategoriesTab() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredCategories.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition">
+                <tr key={item._id} className="hover:bg-slate-50/50 transition">
                   <td className="p-3">
                     <input 
                       type="checkbox" 
-                      checked={selectedIds.includes(item.id)}
-                      onChange={(e) => handleSelectOne(item.id, e.target.checked)}
+                      checked={selectedIds.includes(item._id)}
+                      onChange={(e) => handleSelectOne(item._id, e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500" 
                     />
                   </td>
                   <td className="p-3 font-semibold text-slate-800">{item.name}</td>
                   <td className="p-3">
-                    <span className="px-2 py-0.5 bg-emerald-500 text-white rounded text-[10px] font-bold">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${
+                      item.status === 'Active' ? 'bg-emerald-500' : 'bg-red-500'
+                    }`}>
                       {item.status}
                     </span>
                   </td>
                   <td className="p-3 font-semibold text-slate-700">{item.serialNumber}</td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item._id)}
                         className="p-1.5 bg-red-500 hover:bg-red-650 text-white rounded transition"
                       >
                         <Trash2 size={10} />

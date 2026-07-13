@@ -29,6 +29,7 @@ export default function AddAdminModal({ isOpen, onClose, onSave }) {
       email,
       firstName,
       lastName,
+      password,
       avatar: imagePreview || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
       status: 'Active'
     });

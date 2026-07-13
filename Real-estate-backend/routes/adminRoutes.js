@@ -15,12 +15,34 @@ import {
   deleteUser,
   toggleUserStatus,
   getTickets,
+  getTicketDetail,
   replyTicket,
   updateTicketStatus,
   getAdminMessages,
   deleteAdminMessage,
   getAdminSettings,
   updateAdminSettings,
+  getBlogCategories,
+  createBlogCategory,
+  deleteBlogCategory,
+  getBlogPosts,
+  createBlogPost,
+  deleteBlogPost,
+  getFAQs,
+  createFAQ,
+  deleteFAQ,
+  getAdvertisements,
+  createAdvertisement,
+  deleteAdvertisement,
+  getAnnouncementPopups,
+  createAnnouncementPopup,
+  deleteAnnouncementPopup,
+  getAdminRoles,
+  createAdminRole,
+  deleteAdminRole,
+  getAdmins,
+  createAdmin,
+  deleteAdmin,
 } from '../controllers/adminController.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 
@@ -60,6 +82,7 @@ router.put('/users/:id/status', toggleUserStatus);
 // Ticket management
 router.route('/tickets')
   .get(getTickets);
+router.get('/tickets/:id', getTicketDetail);
 router.post('/tickets/:id/reply', replyTicket);
 router.put('/tickets/:id/status', updateTicketStatus);
 
@@ -71,5 +94,51 @@ router.delete('/messages/:id', deleteAdminMessage);
 router.route('/settings')
   .get(getAdminSettings)
   .put(updateAdminSettings);
+
+// Blog Categories
+router.route('/blog/categories')
+  .get(getBlogCategories)
+  .post(createBlogCategory);
+
+router.delete('/blog/categories/:id', deleteBlogCategory);
+
+// Blog Posts
+router.route('/blog/posts')
+  .get(getBlogPosts)
+  .post(createBlogPost);
+
+router.delete('/blog/posts/:id', deleteBlogPost);
+
+// FAQs
+router.route('/faqs')
+  .get(getFAQs)
+  .post(createFAQ);
+
+router.delete('/faqs/:id', deleteFAQ);
+
+// Advertisements
+router.route('/advertisements')
+  .get(getAdvertisements)
+  .post(createAdvertisement);
+
+router.delete('/advertisements/:id', deleteAdvertisement);
+
+// Announcement Popups
+router.route('/announcement-popups')
+  .get(getAnnouncementPopups)
+  .post(createAnnouncementPopup);
+
+router.delete('/announcement-popups/:id', deleteAnnouncementPopup);
+
+// Admin Roles & Admins Management
+router.route('/roles')
+  .get(getAdminRoles)
+  .post(createAdminRole);
+router.delete('/roles/:id', deleteAdminRole);
+
+router.route('/admins')
+  .get(getAdmins)
+  .post(createAdmin);
+router.delete('/admins/:id', deleteAdmin);
 
 export default router;

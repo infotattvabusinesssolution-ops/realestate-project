@@ -4,6 +4,12 @@ import Ticket from '../models/Ticket.js';
 import Project from '../models/Project.js';
 import Message from '../models/Message.js';
 import Settings from '../models/Settings.js';
+import BlogCategory from '../models/BlogCategory.js';
+import BlogPost from '../models/BlogPost.js';
+import FAQ from '../models/FAQ.js';
+import Advertisement from '../models/Advertisement.js';
+import AnnouncementPopup from '../models/AnnouncementPopup.js';
+import AdminRole from '../models/AdminRole.js';
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/stats
@@ -240,7 +246,7 @@ export const getUsers = async (req, res) => {
 // @access  Private/Admin
 export const createUser = async (req, res) => {
   try {
-    const { name, email, password, role, phone, city, rating, experience, specialization, businessName } = req.body;
+    const { name, username, email, password, role, phone, city, state, zip, address, avatar, status, rating, experience, specialization, businessName } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -249,11 +255,17 @@ export const createUser = async (req, res) => {
 
     const user = await User.create({
       name,
+      username: username || '',
       email,
       password,
       role,
       phone: phone || '',
       city: city || '',
+      state: state || '',
+      zip: zip || '',
+      address: address || '',
+      avatar: avatar || undefined,
+      status: status || 'Active',
       rating: rating || '5.0★',
       experience: experience || 'N/A',
       specialization: specialization || 'General',
@@ -277,7 +289,7 @@ export const updateUser = async (req, res) => {
     }
 
     const fields = [
-      'name', 'email', 'phone', 'city', 'rating', 'experience',
+      'name', 'username', 'email', 'phone', 'city', 'state', 'zip', 'address', 'rating', 'experience',
       'specialization', 'businessName', 'status', 'avatar',
       'emailStatus', 'isEmailVerified'
     ];
@@ -342,6 +354,25 @@ export const getTickets = async (req, res) => {
   }
 };
 
+// @desc    Get support ticket detail
+// @route   GET /api/admin/tickets/:id
+// @access  Private/Admin
+export const getTicketDetail = async (req, res) => {
+  try {
+    const ticket = await Ticket.findById(req.params.id)
+      .populate('user', 'name email role')
+      .populate('responses.sender', 'name role avatar');
+
+    if (ticket) {
+      res.json(ticket);
+    } else {
+      res.status(404).json({ message: 'Ticket not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Reply on support ticket
 // @route   POST /api/admin/tickets/:id/reply
 // @access  Private/Admin
@@ -358,7 +389,7 @@ export const replyTicket = async (req, res) => {
       };
 
       ticket.responses.push(responseMessage);
-      ticket.status = req.body.status || 'In Progress';
+      ticket.status = req.body.status || 'Pending';
       await ticket.save();
 
       // Return the updated ticket populated
@@ -456,7 +487,7 @@ export const updateAdminSettings = async (req, res) => {
     const fields = [
       'needsApproval', 'needsProjectApproval', 'packageRemindDays',
       'vendorNeedsApproval', 'vendorEmailVerification', 'vendorApprovalNotice',
-      'ticketsActive'
+      'ticketsActive', 'adsensePublisherId'
     ];
 
     fields.forEach(f => {
@@ -467,6 +498,342 @@ export const updateAdminSettings = async (req, res) => {
 
     await settings.save();
     res.json(settings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
+// BLOG CATEGORIES CONTROLLERS
+// ==========================================
+export const getBlogCategories = async (req, res) => {
+  try {
+    const { lang } = req.query;
+    const filter = lang ? { language: lang } : {};
+    const categories = await BlogCategory.find(filter).sort({ serialNumber: 1 });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createBlogCategory = async (req, res) => {
+  try {
+    const { lang, name, status, serialNumber } = req.body;
+    
+    // Check if category already exists
+    const categoryExists = await BlogCategory.findOne({ name });
+    if (categoryExists) {
+      return res.status(400).json({ message: 'Category already exists' });
+    }
+
+    const category = await BlogCategory.create({
+      name,
+      status: status || 'Active',
+      serialNumber: serialNumber !== undefined ? Number(serialNumber) : 0,
+      language: lang || 'English'
+    });
+
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteBlogCategory = async (req, res) => {
+  try {
+    const category = await BlogCategory.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    await BlogCategory.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Category removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
+// BLOG POSTS CONTROLLERS
+// ==========================================
+export const getBlogPosts = async (req, res) => {
+  try {
+    const { lang } = req.query;
+    const filter = lang ? { language: lang } : {};
+    const posts = await BlogPost.find(filter).sort({ serialNumber: 1 });
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createBlogPost = async (req, res) => {
+  try {
+    const { serialNumber, status, title, category, author, content, metaKeywords, metaDescription, language, image } = req.body;
+
+    const post = await BlogPost.create({
+      title,
+      category,
+      content,
+      author,
+      image: image || undefined,
+      serialNumber: serialNumber !== undefined ? Number(serialNumber) : 0,
+      status: status || 'Active',
+      metaKeywords: metaKeywords || '',
+      metaDescription: metaDescription || '',
+      language: language || 'English'
+    });
+
+    res.status(201).json(post);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteBlogPost = async (req, res) => {
+  try {
+    const post = await BlogPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Blog post not found' });
+    }
+    await BlogPost.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Blog post removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
+// FAQ CONTROLLERS
+// ==========================================
+export const getFAQs = async (req, res) => {
+  try {
+    const { lang } = req.query;
+    const filter = lang ? { language: lang } : {};
+    const faqs = await FAQ.find(filter).sort({ serialNumber: 1 });
+    res.json(faqs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createFAQ = async (req, res) => {
+  try {
+    const { lang, question, answer, serialNumber } = req.body;
+
+    const faq = await FAQ.create({
+      question,
+      answer: answer || '',
+      serialNumber: serialNumber !== undefined ? Number(serialNumber) : 0,
+      language: lang || 'English'
+    });
+
+    res.status(201).json(faq);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteFAQ = async (req, res) => {
+  try {
+    const faq = await FAQ.findById(req.params.id);
+    if (!faq) {
+      return res.status(404).json({ message: 'FAQ not found' });
+    }
+    await FAQ.findByIdAndDelete(req.params.id);
+    res.json({ message: 'FAQ removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
+// ADVERTISEMENTS CONTROLLERS
+// ==========================================
+export const getAdvertisements = async (req, res) => {
+  try {
+    const advertisements = await Advertisement.find().sort({ createdAt: -1 });
+    res.json(advertisements);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createAdvertisement = async (req, res) => {
+  try {
+    const { adType, resolution } = req.body;
+
+    const advertisement = await Advertisement.create({
+      adType,
+      resolution
+    });
+
+    res.status(201).json(advertisement);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteAdvertisement = async (req, res) => {
+  try {
+    const advertisement = await Advertisement.findById(req.params.id);
+    if (!advertisement) {
+      return res.status(404).json({ message: 'Advertisement not found' });
+    }
+    await Advertisement.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Advertisement removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
+// ANNOUNCEMENT POPUPS CONTROLLERS
+// ==========================================
+export const getAnnouncementPopups = async (req, res) => {
+  try {
+    const { lang } = req.query;
+    const filter = lang ? { language: lang } : {};
+    const popups = await AnnouncementPopup.find(filter).sort({ serialNumber: -1 });
+    res.json(popups);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createAnnouncementPopup = async (req, res) => {
+  try {
+    const { lang, name, bgColor, bgOpacity, title, text, btnText, btnColor, delay, serialNumber, image } = req.body;
+
+    const popup = await AnnouncementPopup.create({
+      name,
+      bgColor,
+      bgOpacity: bgOpacity !== undefined ? Number(bgOpacity) : 1.0,
+      title,
+      text,
+      btnText: btnText || '',
+      btnColor: btnColor || '',
+      delay: delay !== undefined ? Number(delay) : 0,
+      serialNumber: serialNumber !== undefined ? Number(serialNumber) : 0,
+      language: lang || 'English',
+      img: image || undefined
+    });
+
+    res.status(201).json(popup);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteAnnouncementPopup = async (req, res) => {
+  try {
+    const popup = await AnnouncementPopup.findById(req.params.id);
+    if (!popup) {
+      return res.status(404).json({ message: 'Announcement popup not found' });
+    }
+    await AnnouncementPopup.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Announcement popup removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
+// ADMIN ROLES CONTROLLERS
+// ==========================================
+export const getAdminRoles = async (req, res) => {
+  try {
+    const roles = await AdminRole.find().sort({ createdAt: -1 });
+    res.json(roles);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createAdminRole = async (req, res) => {
+  try {
+    const { name, permissions } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: 'Role name is required' });
+    }
+    const role = await AdminRole.create({ name, permissions });
+    res.status(201).json(role);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteAdminRole = async (req, res) => {
+  try {
+    const role = await AdminRole.findById(req.params.id);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+    await AdminRole.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Role removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ==========================================
+// REGISTERED ADMINS CONTROLLERS
+// ==========================================
+export const getAdmins = async (req, res) => {
+  try {
+    const admins = await User.find({ role: 'admin' }).sort({ createdAt: -1 });
+    res.json(admins);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const createAdmin = async (req, res) => {
+  try {
+    const { role, username, email, firstName, lastName, password, avatar, status } = req.body;
+
+    if (!role || !username || !email || !firstName || !lastName || !password) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    const admin = await User.create({
+      name: `${firstName} ${lastName}`,
+      username,
+      email,
+      password,
+      role: 'admin',
+      adminRole: role,
+      status: status || 'Active',
+      avatar: avatar || undefined
+    });
+
+    res.status(201).json({
+      _id: admin._id,
+      name: admin.name,
+      username: admin.username,
+      email: admin.email,
+      role: admin.adminRole,
+      status: admin.status,
+      avatar: admin.avatar
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteAdmin = async (req, res) => {
+  try {
+    const admin = await User.findOne({ _id: req.params.id, role: 'admin' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Admin removed successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

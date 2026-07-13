@@ -75,6 +75,8 @@ import OfflineGatewaysTab from '../components/admin/OfflineGatewaysTab';
 import AdminRolesTab from '../components/admin/AdminRolesTab';
 import AdminListTab from '../components/admin/AdminListTab';
 import LanguageManagementTab from '../components/admin/LanguageManagementTab';
+import AdminEditProfileTab from '../components/admin/AdminEditProfileTab';
+import AdminChangePasswordTab from '../components/admin/AdminChangePasswordTab';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -533,14 +535,20 @@ export default function AdminDashboard() {
             {profileExpanded && (
               <div className="mt-3 px-2 py-2 bg-slate-50 rounded-xl space-y-1 text-xs font-bold text-slate-600 animate-in slide-in-from-top-2 duration-200">
                 <button 
-                  onClick={() => alert('Profile editing is currently a demo feature.')}
+                  onClick={() => {
+                    setActiveTab('admin-edit-profile');
+                    setProfileExpanded(false);
+                  }}
                   className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg hover:bg-white hover:text-slate-900 transition text-left"
                 >
                   <UserCheck size={14} className="text-slate-400" />
                   <span>Edit Profile</span>
                 </button>
                 <button 
-                  onClick={() => alert('Change password triggers security email logs.')}
+                  onClick={() => {
+                    setActiveTab('admin-change-password');
+                    setProfileExpanded(false);
+                  }}
                   className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg hover:bg-white hover:text-slate-900 transition text-left"
                 >
                   <Key size={14} className="text-slate-400" />
@@ -1186,6 +1194,16 @@ export default function AdminDashboard() {
           {/* TAB: LANGUAGE MANAGEMENT */}
           {activeTab === 'language-management' && (
             <LanguageManagementTab setActiveTab={setActiveTab} />
+          )}
+
+          {/* TAB: ADMIN PROFILE EDIT */}
+          {activeTab === 'admin-edit-profile' && (
+            <AdminEditProfileTab setActiveTab={setActiveTab} />
+          )}
+
+          {/* TAB: ADMIN CHANGE PASSWORD */}
+          {activeTab === 'admin-change-password' && (
+            <AdminChangePasswordTab setActiveTab={setActiveTab} />
           )}
 
 

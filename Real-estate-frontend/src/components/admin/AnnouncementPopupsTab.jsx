@@ -1,27 +1,35 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Info } from 'lucide-react';
-
-const initialPopups = [
-  { id: 7, type: 'Type - 7', name: 'Flash Deals', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Active', serialNumber: 7 },
-  { id: 6, type: 'Type - 6', name: 'Countdown Popup', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 6 },
-  { id: 5, type: 'Type - 5', name: 'Final Popup', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Active', serialNumber: 5 },
-  { id: 4, type: 'Type - 4', name: 'Winter Offer', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 4 },
-  { id: 3, type: 'Type - 3', name: 'Summer Offer', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 3 },
-  { id: 2, type: 'Type - 2', name: 'Month End Sale', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 2 },
-  { id: 1, type: 'Type - 1', name: 'Black Friday', img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=80&q=80', status: 'Deactive', serialNumber: 1 }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AnnouncementPopupsTab({ setActiveTab }) {
   const navigate = useNavigate();
-  const [popups, setPopups] = useState(initialPopups);
+  const [popups, setPopups] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [lang, setLang] = useState('English');
   const [selectedIds, setSelectedIds] = useState([]);
 
+  const fetchPopups = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get(`/admin/announcement-popups?lang=${lang}`);
+      setPopups(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching announcement popups:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPopups();
+  }, [lang]);
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(popups.map(p => p.id));
+      setSelectedIds(popups.map(p => p._id));
     } else {
       setSelectedIds([]);
     }
@@ -35,18 +43,33 @@ export default function AnnouncementPopupsTab({ setActiveTab }) {
     }
   };
 
-  const handleDelete = (id) => {
-    setPopups(popups.filter(p => p.id !== id));
-    setSelectedIds(selectedIds.filter(x => x !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this popup?')) return;
+    try {
+      await axiosInstance.delete(`/admin/announcement-popups/${id}`);
+      setPopups(popups.filter(p => p._id !== id));
+      setSelectedIds(selectedIds.filter(x => x !== id));
+      alert('Popup deleted successfully');
+    } catch (err) {
+      alert('Failed to delete popup');
+    }
   };
 
   const filteredPopups = useMemo(() => {
     if (!search) return popups;
     return popups.filter(p => 
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.type.toLowerCase().includes(search.toLowerCase())
+      (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.type || '').toLowerCase().includes(search.toLowerCase())
     );
   }, [search, popups]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -138,12 +161,12 @@ export default function AnnouncementPopupsTab({ setActiveTab }) {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredPopups.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition bg-white">
+                <tr key={item._id} className="hover:bg-slate-50/50 transition bg-white">
                   <td className="p-3">
                     <input 
                       type="checkbox" 
-                      checked={selectedIds.includes(item.id)}
-                      onChange={(e) => handleSelectOne(item.id, e.target.checked)}
+                      checked={selectedIds.includes(item._id)}
+                      onChange={(e) => handleSelectOne(item._id, e.target.checked)}
                       className="rounded text-blue-600 focus:ring-blue-500" 
                     />
                   </td>
@@ -167,13 +190,9 @@ export default function AnnouncementPopupsTab({ setActiveTab }) {
                   <td className="p-3 font-semibold text-slate-700">{item.serialNumber}</td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => handleDelete(item._id)}
                         className="p-1.5 bg-red-500 hover:bg-red-650 text-white rounded transition"
                       >
                         <Trash2 size={10} />

@@ -1,29 +1,59 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown } from 'lucide-react';
-
-const initialBlogPosts = [
-  { id: 7, title: 'Understanding Lease Agreements: What Every Tenant Should Know', category: 'Renting and Leasing', date: 'Jun 13, 2024', status: 'Inactive', serial: 7 },
-  { id: 6, title: 'How Economic Changes Are Impacting the Housing Market', category: 'Market Trends and Analysis', date: 'Aug 19, 2023', status: 'Active', serial: 6 },
-  { id: 5, title: 'How to Handle Tenant Issues: A Guide for Landlords', category: 'Renting and Leasing', date: 'Aug 19, 2023', status: 'Active', serial: 5 },
-  { id: 4, title: 'How to Choose the Right Homeowners Insurance Policy', category: 'Legal and Financial Advice', date: 'Aug 19, 2023', status: 'Active', serial: 4 },
-  { id: 3, title: 'Legal Pitfalls to Avoid in Real Estate Transactions', category: 'Legal and Financial Advice', date: 'Aug 19, 2023', status: 'Active', serial: 3 },
-  { id: 2, title: "First-Time Homebuyers' Guide: 10 Essential Tips for Success", category: 'Buying Guides', date: 'Aug 19, 2023', status: 'Active', serial: 2 },
-  { id: 1, title: 'Navigating Mortgage Options: Fixed vs. Adjustable Rates Explained', category: 'Buying Guides', date: 'Aug 19, 2023', status: 'Active', serial: 1 }
-];
+import axiosInstance from '../../api/axiosInstance';
 
 export default function BlogPostsTab({ setBlogExpanded, setActiveTab }) {
   const navigate = useNavigate();
   const [searchPost, setSearchPost] = useState('');
-  const [blogPosts] = useState(initialBlogPosts);
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState('English');
+  const [actionDropdownId, setActionDropdownId] = useState(null);
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstance.get(`/admin/blog/posts?lang=${lang}`);
+      setBlogPosts(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching blog posts:', err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, [lang]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this blog post?')) return;
+    try {
+      await axiosInstance.delete(`/admin/blog/posts/${id}`);
+      setBlogPosts(prev => prev.filter(p => p._id !== id));
+      setActionDropdownId(null);
+      alert('Blog post deleted successfully');
+    } catch (err) {
+      alert('Failed to delete blog post');
+    }
+  };
 
   const filteredPosts = useMemo(() => {
     if (!searchPost) return blogPosts;
     const q = searchPost.toLowerCase();
     return blogPosts.filter(
-      p => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+      p => (p.title || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q)
     );
   }, [searchPost, blogPosts]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-100 shadow-premium">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-650"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -50,10 +80,13 @@ export default function BlogPostsTab({ setBlogExpanded, setActiveTab }) {
           <div className="flex items-center space-x-4">
             <h3 className="text-sm font-bold text-slate-800">Posts</h3>
             
-            <select className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 transition font-medium">
+            <select 
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 transition font-medium"
+            >
               <option value="English">English</option>
-              <option value="Spanish">Spanish</option>
-              <option value="French">French</option>
+              <option value="Arabic">Arabic</option>
             </select>
           </div>
 
@@ -108,15 +141,15 @@ export default function BlogPostsTab({ setBlogExpanded, setActiveTab }) {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredPosts.map((post) => (
-                <tr key={post.id} className="hover:bg-slate-50/50 transition">
+                <tr key={post._id} className="hover:bg-slate-50/50 transition">
                   <td className="p-3">
                     <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500" />
                   </td>
                   <td className="p-3 font-bold text-slate-800 max-w-sm truncate">{post.title}</td>
                   <td className="p-3 text-slate-500 font-semibold">{post.category}</td>
-                  <td className="p-3 text-slate-400 font-medium">{post.date}</td>
+                  <td className="p-3 text-slate-400 font-medium">{new Date(post.createdAt).toLocaleDateString()}</td>
                   <td className="p-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full font-bold text-[9px] uppercase ${
+                    <span className={`inline-flex px-2 py-0.5 rounded font-bold text-[9px] uppercase ${
                       post.status === 'Active' 
                         ? 'bg-emerald-100 text-emerald-600' 
                         : 'bg-red-100 text-red-500'
@@ -124,15 +157,33 @@ export default function BlogPostsTab({ setBlogExpanded, setActiveTab }) {
                       {post.status}
                     </span>
                   </td>
-                  <td className="p-3 font-semibold text-slate-700">{post.serial}</td>
-                  <td className="p-3 text-right">
-                    <button className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition">
+                  <td className="p-3 font-semibold text-slate-700">{post.serialNumber}</td>
+                  <td className="p-3 text-right relative">
+                    <button
+                      onClick={() => setActionDropdownId(actionDropdownId === post._id ? null : post._id)}
+                      className="inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-650 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition active:scale-95"
+                    >
                       <span>Select</span>
                       <ChevronDown size={8} />
                     </button>
+                    {actionDropdownId === post._id && (
+                      <div className="absolute right-3 mt-1 z-35 bg-white border border-slate-100 rounded-lg shadow-lg py-1 w-24 text-[10px] font-bold text-slate-700 text-left animate-in fade-in duration-200">
+                        <button
+                          onClick={() => handleDelete(post._id)}
+                          className="w-full text-left px-3 py-1.5 text-red-650 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
+              {filteredPosts.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="p-4 text-center text-slate-400">No posts found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

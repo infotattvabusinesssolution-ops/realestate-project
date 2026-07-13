@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft, Image as ImageIcon, Globe } from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AnnouncementPopupAddTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -17,14 +18,33 @@ export default function AnnouncementPopupAddTab({ setActiveTab }) {
   const [delay, setDelay] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!lang || !name || !bgColor || !bgOpacity || !title || !text || !delay || !serialNumber) {
       alert('Please fill out all required fields.');
       return;
     }
-    alert('Announcement popup saved successfully!');
-    setActiveTab('announcement-popups');
+
+    try {
+      const payload = {
+        lang,
+        name,
+        bgColor,
+        bgOpacity: parseFloat(bgOpacity) || 1.0,
+        title,
+        text,
+        btnText,
+        btnColor,
+        delay: parseInt(delay, 10) || 0,
+        serialNumber: parseInt(serialNumber, 10) || 0,
+        image: imagePreview || undefined
+      };
+      await axiosInstance.post('/admin/announcement-popups', payload);
+      alert('Announcement popup saved successfully!');
+      setActiveTab('announcement-popups');
+    } catch (err) {
+      alert('Failed to save announcement popup: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   return (
@@ -204,7 +224,7 @@ export default function AnnouncementPopupAddTab({ setActiveTab }) {
               value={delay}
               onChange={(e) => setDelay(e.target.value)}
               placeholder="Enter Popup Delay"
-              className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none w-full"
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-850 focus:outline-none w-full"
               required
             />
             <span className="text-[10px] text-amber-600 font-medium">
@@ -220,7 +240,7 @@ export default function AnnouncementPopupAddTab({ setActiveTab }) {
               value={serialNumber}
               onChange={(e) => setSerialNumber(e.target.value)}
               placeholder="Enter Serial Number"
-              className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none w-full"
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-850 focus:outline-none w-full"
               required
             />
             <span className="text-[10px] text-amber-600 font-medium">
