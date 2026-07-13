@@ -478,7 +478,13 @@ export default function AdminDashboard() {
               src={adminUser.avatar}
               alt={adminUser.name}
               className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-100 cursor-pointer"
-              onClick={() => setProfileExpanded(!profileExpanded)}
+              onClick={() => {
+                setProfileExpanded(!profileExpanded);
+                // If on mobile and opening, ensure sidebar is open
+                if (!profileExpanded && window.innerWidth < 640) {
+                  setSidebarOpen(true);
+                }
+              }}
             />
           </div>
 
