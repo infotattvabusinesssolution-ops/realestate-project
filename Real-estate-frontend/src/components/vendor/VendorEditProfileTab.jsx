@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Home, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Home, ChevronDown, Camera } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import axiosInstance from '../../api/axiosInstance';
 
 export function VendorEditProfileTab() {
   const { user, updateProfile } = useAuth();
+  const fileInputRef = useRef(null);
   
   // States matching user schema
   const [username, setUsername] = useState('');
@@ -21,7 +23,9 @@ export function VendorEditProfileTab() {
   const [showPhone, setShowPhone] = useState(true);
   const [showContactForm, setShowContactForm] = useState(true);
   const [arabicExpanded, setArabicExpanded] = useState(false);
+  
   const [updating, setUpdating] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Load user data on mount/context change
   useEffect(() => {
@@ -38,6 +42,28 @@ export function VendorEditProfileTab() {
       setDetails(user.specialization || '');
     }
   }, [user]);
+
+  // Image Upload handler
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setUploading(true);
+      const res = await axiosInstance.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setAvatar(res.data.url);
+      alert('Photo uploaded successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -62,7 +88,7 @@ export function VendorEditProfileTab() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans">
       
       {/* Header breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
@@ -86,24 +112,45 @@ export function VendorEditProfileTab() {
           
           {/* Details header block */}
           <div className="space-y-6">
-            <h4 className="text-xs font-black text-slate-850 border-b border-slate-100 pb-2">Details</h4>
+            <h4 className="text-xs font-black text-slate-855 border-b border-slate-100 pb-2">Details</h4>
             
-            {/* Photo Uploader/Viewer */}
+            {/* Photo Uploader */}
             <div className="space-y-3">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Photo URL</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Profile Photo</span>
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <img 
-                  src={avatar} 
-                  alt={name || "Profile"} 
-                  className="w-24 h-24 rounded-2xl object-cover border border-slate-150 shadow-sm shrink-0"
-                />
-                <input 
-                  type="text" 
-                  value={avatar}
-                  onChange={(e) => setAvatar(e.target.value)}
-                  placeholder="Paste direct image URL"
-                  className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none max-w-md"
-                />
+                <div className="relative group w-24 h-24 shrink-0">
+                  <img 
+                    src={avatar} 
+                    alt={name || "Profile"} 
+                    className="w-24 h-24 rounded-2xl object-cover border border-slate-150 shadow-sm"
+                  />
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center text-white text-[9px] font-bold">
+                      Uploading...
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button 
+                    type="button" 
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current.click()}
+                    className="px-4 py-2 bg-[#16a34a] hover:bg-green-700 disabled:opacity-50 text-white rounded-xl font-bold text-[10px] transition active:scale-95 flex items-center gap-1.5 shadow-md shadow-green-500/10"
+                  >
+                    <Camera size={12} />
+                    <span>{uploading ? 'Uploading...' : 'Choose Photo'}</span>
+                  </button>
+                  <p className="text-[9px] text-slate-400 font-semibold leading-relaxed">
+                    Upload an avatar image to represent your user profile in vendor portal.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -150,7 +197,7 @@ export function VendorEditProfileTab() {
                   type="checkbox" 
                   checked={showEmail} 
                   onChange={(e) => setShowEmail(e.target.checked)} 
-                  className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" 
+                  className="w-4 h-4 rounded text-blue-600 border-slate-350 focus:ring-blue-500" 
                 />
                 <span>Show Email Address</span>
               </label>
@@ -160,7 +207,7 @@ export function VendorEditProfileTab() {
                   type="checkbox" 
                   checked={showPhone} 
                   onChange={(e) => setShowPhone(e.target.checked)} 
-                  className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" 
+                  className="w-4 h-4 rounded text-blue-600 border-slate-350 focus:ring-blue-500" 
                 />
                 <span>Show Phone Number</span>
               </label>
@@ -170,7 +217,7 @@ export function VendorEditProfileTab() {
                   type="checkbox" 
                   checked={showContactForm} 
                   onChange={(e) => setShowContactForm(e.target.checked)} 
-                  className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500" 
+                  className="w-4 h-4 rounded text-blue-600 border-slate-350 focus:ring-blue-500" 
                 />
                 <span>Show Contact Form</span>
               </label>

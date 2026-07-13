@@ -4,17 +4,23 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend 
 } from 'recharts';
+import { useAuth } from '../../context/AuthContext';
 
-export default function AgentDashboardTab({ setActiveTab, propertiesCount = 2, projectsCount = 0 }) {
-  
-  // Stats Data matching properties (green) and projects (purple) in the screenshot
+export default function AgentDashboardTab({ setActiveTab, propertiesCount = 0, projectsCount = 0, chartData = [] }) {
+  const { user } = useAuth();
+
+  // Stats Data matching properties (green) and projects (purple)
   const statsData = [
     { id: 'properties-list', name: 'Properties', value: propertiesCount, icon: Home, bg: 'bg-[#22c55e]', shadow: 'shadow-[#22c55e]/10' },
     { id: 'projects-list', name: 'Projects', value: projectsCount, icon: Building2, bg: 'bg-[#6366f1]', shadow: 'shadow-[#6366f1]/10' }
   ];
 
-  // Flat data matching flat charts in the mockup
-  const chartData = [
+  // Default fallback data if backend has no records
+  const defaultChartData = chartData && chartData.length > 0 ? chartData.map(item => ({
+    month: item.month,
+    'Monthly Property Posts': item.properties,
+    'Monthly Projects Post': item.projects
+  })) : [
     { month: 'Jan', 'Monthly Property Posts': 0, 'Monthly Projects Post': 0 },
     { month: 'Feb', 'Monthly Property Posts': 0, 'Monthly Projects Post': 0 },
     { month: 'Mar', 'Monthly Property Posts': 0, 'Monthly Projects Post': 0 },
@@ -35,7 +41,7 @@ export default function AgentDashboardTab({ setActiveTab, propertiesCount = 2, p
       {/* Welcome Title */}
       <div>
         <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">
-          Welcome back, rendall!
+          Welcome back, {user?.name || 'Agent'}!
         </h1>
       </div>
 
@@ -71,13 +77,13 @@ export default function AgentDashboardTab({ setActiveTab, propertiesCount = 2, p
           <h3 className="text-sm font-bold text-slate-800 mb-6">Monthly Property Posts (2026)</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={defaultChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} domain={[-1.0, 1.0]} ticks={[-1.0, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0]} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
                 <Legend iconType="rect" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px', paddingTop: '15px' }} />
-                <Line type="linear" dataKey="Monthly Property Posts" stroke="#2563eb" strokeWidth={2} dot={{ fill: '#2563eb', strokeWidth: 1.5, r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="Monthly Property Posts" stroke="#22c55e" strokeWidth={2} dot={{ fill: '#22c55e', strokeWidth: 1.5, r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -88,13 +94,13 @@ export default function AgentDashboardTab({ setActiveTab, propertiesCount = 2, p
           <h3 className="text-sm font-bold text-slate-800 mb-6">Monthly Projects Post (2026)</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={defaultChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="month" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} domain={[-1.0, 1.0]} ticks={[-1.0, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1.0]} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '11px' }} />
                 <Legend iconType="rect" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px', paddingTop: '15px' }} />
-                <Line type="linear" dataKey="Monthly Projects Post" stroke="#2563eb" strokeWidth={2} dot={{ fill: '#2563eb', strokeWidth: 1.5, r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="Monthly Projects Post" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1', strokeWidth: 1.5, r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

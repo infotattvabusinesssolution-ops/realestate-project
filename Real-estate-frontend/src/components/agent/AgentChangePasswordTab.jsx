@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
 import { Home } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AgentChangePasswordTab() {
+  const { changePassword } = useAuth();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPass !== confirm) {
       alert('Passwords do not match');
       return;
     }
-    alert('Password Changed successfully!');
-    setCurrent('');
-    setNewPass('');
-    setConfirm('');
+    
+    try {
+      setSubmitting(true);
+      await changePassword(current, newPass);
+      alert('Password updated successfully!');
+      setCurrent('');
+      setNewPass('');
+      setConfirm('');
+    } catch (err) {
+      alert(err || 'Failed to change password. Please verify current password.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans">
       
       {/* Header breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
@@ -47,8 +59,9 @@ export default function AgentChangePasswordTab() {
               type="password" 
               required 
               value={current} 
+              disabled={submitting}
               onChange={(e) => setCurrent(e.target.value)} 
-              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none disabled:bg-slate-50" 
             />
           </div>
 
@@ -58,8 +71,9 @@ export default function AgentChangePasswordTab() {
               type="password" 
               required 
               value={newPass} 
+              disabled={submitting}
               onChange={(e) => setNewPass(e.target.value)} 
-              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none disabled:bg-slate-50" 
             />
           </div>
 
@@ -69,8 +83,9 @@ export default function AgentChangePasswordTab() {
               type="password" 
               required 
               value={confirm} 
+              disabled={submitting}
               onChange={(e) => setConfirm(e.target.value)} 
-              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none disabled:bg-slate-50" 
             />
           </div>
 
@@ -78,9 +93,10 @@ export default function AgentChangePasswordTab() {
           <div className="flex justify-center pt-6">
             <button 
               type="submit" 
-              className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-green-500/10"
+              disabled={submitting}
+              className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-green-500/10"
             >
-              Update
+              {submitting ? 'Updating...' : 'Update'}
             </button>
           </div>
 

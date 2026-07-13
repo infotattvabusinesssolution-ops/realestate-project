@@ -29,7 +29,21 @@ export default function VendorDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [menuSearch, setMenuSearch] = useState('');
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('darkMode') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode);
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    return () => {
+      document.documentElement.classList.remove('dark');
+    };
+  }, [darkMode]);
 
   // Expanded states for submenus
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
@@ -40,6 +54,13 @@ export default function VendorDashboard() {
   const [propertiesList, setPropertiesList] = useState([]);
   const [projectsList, setProjectsList] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    if (window.innerWidth < 640) {
+      setSidebarOpen(false);
+    }
+  };
 
   // Auth check redirect
   useEffect(() => {
@@ -233,11 +254,6 @@ export default function VendorDashboard() {
 
         {/* Top Right Controls */}
         <div className="flex items-center space-x-4">
-          {/* Language Globe Icon */}
-          <button className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition flex items-center justify-center">
-            <Globe size={16} />
-          </button>
-
           {/* Theme Toggle Button */}
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -292,6 +308,14 @@ export default function VendorDashboard() {
               </div>
             )}
           </div>
+
+          {/* Mobile Sidebar Toggle Button (visible only on mobile) */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="sm:hidden w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center justify-center active:scale-95 border border-slate-100"
+          >
+            <Menu size={16} />
+          </button>
         </div>
       </header>
 
@@ -302,15 +326,16 @@ export default function VendorDashboard() {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="absolute top-4 left-4 z-50 p-2.5 bg-white text-slate-600 hover:text-slate-900 rounded-xl border border-slate-150 shadow-md hover:shadow-lg transition active:scale-95 animate-in fade-in zoom-in duration-200"
+            className="hidden sm:block absolute top-4 left-4 z-50 p-2.5 bg-white text-slate-600 hover:text-slate-900 rounded-xl border border-slate-150 shadow-md hover:shadow-lg transition active:scale-95 animate-in fade-in zoom-in duration-200"
           >
             <Menu size={16} />
           </button>
         )}
 
         {/* 2. Custom Left Sidebar */}
-        <aside className={`bg-white border-r border-slate-100 flex flex-col transition-all duration-300 shadow-sm shrink-0 sticky top-16 h-[calc(100vh-64px)] z-40 overflow-y-auto ${sidebarOpen ? 'w-64' : 'w-0 -translate-x-full overflow-hidden'
-          }`}>
+        <aside className={`bg-white border-r border-slate-100 flex flex-col transition-all duration-300 shadow-xl sm:shadow-sm shrink-0 absolute sm:sticky left-0 top-0 sm:top-16 h-[calc(100vh-64px)] z-40 overflow-y-auto ${
+          sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full overflow-hidden sm:w-0'
+        }`}>
 
           {/* Sidebar Header with Toggle */}
           <div className="p-4 flex items-center justify-between border-b border-slate-100 shrink-0">
@@ -415,8 +440,8 @@ export default function VendorDashboard() {
                     <button
                       onClick={toggleExpand}
                       className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${isActive && !isExpanded
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -433,10 +458,10 @@ export default function VendorDashboard() {
                           return (
                             <button
                               key={sub.id}
-                              onClick={() => setActiveTab(sub.id)}
+                              onClick={() => handleTabClick(sub.id)}
                               className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-[11px] font-bold text-left transition ${isSubActive
-                                  ? 'bg-blue-50 text-blue-600'
-                                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                                 }`}
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
@@ -453,10 +478,10 @@ export default function VendorDashboard() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleTabClick(item.id)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -490,13 +515,13 @@ export default function VendorDashboard() {
 
         {/* 3. Main Content Panel Area */}
         <main className={`flex-1 overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ${sidebarOpen
-            ? 'p-6 lg:p-10'
-            : 'pt-6 pb-6 pr-6 pl-16 lg:pt-10 lg:pb-10 lg:pr-10 lg:pl-24'
+          ? 'py-6 px-2 sm:px-6 lg:p-10'
+          : 'py-6 px-2 sm:pr-6 sm:pl-16 lg:pt-10 lg:pb-10 lg:pr-10 lg:pl-24'
           } space-y-8`}>
 
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
-            <VendorDashboardTab setActiveTab={setActiveTab} />
+            <VendorDashboardTab setActiveTab={handleTabClick} />
           )}
 
           {/* PROPERTY MANAGEMENT TABS */}

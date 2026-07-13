@@ -81,6 +81,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('estaty_token');
     localStorage.removeItem('estaty_user');
+    localStorage.removeItem('darkMode');
+    document.documentElement.classList.remove('dark');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

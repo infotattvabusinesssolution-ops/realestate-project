@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Home, Plus, ChevronDown, Trash2, Building2 } from 'lucide-react';
-import AddVendorPropertyModal from '../modal/vendor/AddVendorPropertyModal';
+import React, { useState, useEffect, useRef } from 'react';
+import { Home, Plus, ChevronDown, Trash2, Building2, Camera, Image } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 
 export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
@@ -16,6 +14,22 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
   const [amenitiesList, setAmenitiesList] = useState([]);
   const [agentsList, setAgentsList] = useState([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(true);
+
+  // File upload refs & states
+  const thumbnailInputRef = useRef(null);
+  const floorPlanInputRef = useRef(null);
+  const videoImageInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [floorPlanUrl, setFloorPlanUrl] = useState('');
+  const [videoImageUrl, setVideoImageUrl] = useState('');
+  const [galleryUrls, setGalleryUrls] = useState([]);
+
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false);
+  const [uploadingVideoImage, setUploadingVideoImage] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   // Form fields state
   const [videoUrl, setVideoUrl] = useState('');
@@ -127,6 +141,66 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
     );
   };
 
+  // File Upload Helper
+  const handleUploadFile = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      if (type === 'thumbnail') setUploadingThumbnail(true);
+      else if (type === 'floorPlan') setUploadingFloorPlan(true);
+      else if (type === 'videoImage') setUploadingVideoImage(true);
+
+      const res = await axiosInstance.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (type === 'thumbnail') setThumbnailUrl(res.data.url);
+      else if (type === 'floorPlan') setFloorPlanUrl(res.data.url);
+      else if (type === 'videoImage') setVideoImageUrl(res.data.url);
+
+      alert('Image uploaded successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Image upload failed');
+    } finally {
+      if (type === 'thumbnail') setUploadingThumbnail(false);
+      else if (type === 'floorPlan') setUploadingFloorPlan(false);
+      else if (type === 'videoImage') setUploadingVideoImage(false);
+    }
+  };
+
+  // Gallery multi uploader
+  const handleUploadGallery = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    try {
+      setUploadingGallery(true);
+      const urls = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await axiosInstance.post('/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        urls.push(res.data.url);
+      }
+      setGalleryUrls([...galleryUrls, ...urls]);
+      alert('Gallery images uploaded successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gallery upload failed');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleRemoveGalleryImage = (index) => {
+    setGalleryUrls(galleryUrls.filter((_, i) => i !== index));
+  };
+
   const resetForm = () => {
     setSelectedType('none');
     setVideoUrl('');
@@ -153,6 +227,10 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
     setTitleAr('');
     setAddressAr('');
     setDescriptionAr('');
+    setThumbnailUrl('');
+    setFloorPlanUrl('');
+    setVideoImageUrl('');
+    setGalleryUrls([]);
     setFeatures([{ id: Date.now(), labelEn: '', valueEn: '', labelAr: '', valueAr: '' }]);
   };
 
@@ -192,6 +270,10 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
       titleAr: titleAr || '',
       addressAr: addressAr || '',
       descriptionAr: descriptionAr || '',
+      image: thumbnailUrl || undefined,
+      floorPlanImage: floorPlanUrl || undefined,
+      videoImage: videoImageUrl || undefined,
+      galleryImages: galleryUrls
     };
 
     // Optional references
@@ -233,7 +315,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
             <span>&gt;</span>
             <span>Property Management</span>
             <span>&gt;</span>
-            <span className="text-slate-600">Property Type</span>
+            <span className="text-slate-655">Property Type</span>
           </div>
         </div>
 
@@ -277,7 +359,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
   // STEP 2: MERGED SINGLE PAGE PROPERTY CREATION FORM
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans">
       
       {/* Header Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
@@ -287,7 +369,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
           <span>&gt;</span>
           <span>Property Management</span>
           <span>&gt;</span>
-          <span className="text-slate-600">
+          <span className="text-slate-655">
             Add Property ({selectedType === 'commercial' ? 'Commercial' : 'Residential'})
           </span>
         </div>
@@ -299,57 +381,144 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 space-y-6">
           <h3 className="text-xs font-bold text-slate-800 border-b border-slate-50 pb-3">Add Property</h3>
           
-          {/* Uploader notice banner */}
           <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3 text-[10px] font-bold text-orange-600">
             You can upload maximum 99 gallery images under one property
           </div>
 
           {/* Gallery Images Drop Box */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Gallery Images**</label>
-            <div className="border border-dashed border-slate-200 rounded-2xl py-12 flex flex-col items-center justify-center bg-slate-50/30 hover:bg-slate-50 hover:border-blue-400 transition cursor-pointer text-center">
-              <span className="text-xs font-semibold text-slate-450">Drop files here to upload</span>
+          <div className="space-y-3">
+            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Gallery Images</label>
+            <input 
+              type="file" 
+              multiple 
+              ref={galleryInputRef} 
+              onChange={handleUploadGallery}
+              accept="image/*"
+              className="hidden" 
+            />
+            <div 
+              onClick={() => galleryInputRef.current.click()}
+              className="border border-dashed border-slate-200 rounded-2xl py-10 flex flex-col items-center justify-center bg-slate-50/30 hover:bg-slate-50 hover:border-blue-400 transition cursor-pointer text-center"
+            >
+              <Image size={24} className="text-slate-400 mb-2" />
+              <span className="text-xs font-bold text-slate-600">
+                {uploadingGallery ? 'Uploading Gallery Images...' : 'Click to Upload Gallery Images'}
+              </span>
             </div>
+
+            {/* Gallery Images Preview */}
+            {galleryUrls.length > 0 && (
+              <div className="flex flex-wrap gap-4 pt-3">
+                {galleryUrls.map((url, idx) => (
+                  <div key={idx} className="relative w-20 h-20 group rounded-xl overflow-hidden border border-slate-150 shadow-sm shrink-0">
+                    <img src={url} alt="Gallery" className="w-20 h-20 object-cover" />
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveGalleryImage(idx)}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] font-black tracking-wide transition-opacity duration-205"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Three Image Card Selectors */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            {/* 1. Thumbnail Image */}
+            {/* Thumbnail Image */}
             <div className="border border-slate-100 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4 bg-white text-center">
               <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Thumbnail Image*</label>
-              <div className="w-28 h-28 border border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center text-slate-300 text-center">
-                <span className="text-[9px] font-bold text-slate-400 leading-none mb-1">NO IMAGE</span>
-                <span className="text-[9px] font-bold text-slate-400 leading-none">FOUND</span>
+              <div className="w-28 h-28 border border-dashed border-slate-200 bg-slate-50 rounded-xl overflow-hidden flex flex-col items-center justify-center text-slate-350 text-center relative shrink-0">
+                {thumbnailUrl ? (
+                  <img src={thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <span className="text-[9px] font-bold text-slate-400 leading-none mb-1">NO IMAGE</span>
+                    <span className="text-[9px] font-bold text-slate-400 leading-none">FOUND</span>
+                  </>
+                )}
+                {uploadingThumbnail && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[9px] font-bold">
+                    Uploading...
+                  </div>
+                )}
               </div>
-              <button type="button" className="px-4 py-1.5 bg-blue-600 text-white rounded font-bold text-[10px] hover:bg-blue-700 transition">Choose Image</button>
+              <input type="file" ref={thumbnailInputRef} onChange={(e) => handleUploadFile(e, 'thumbnail')} accept="image/*" className="hidden" />
+              <button 
+                type="button" 
+                disabled={uploadingThumbnail}
+                onClick={() => thumbnailInputRef.current.click()}
+                className="px-4 py-1.5 bg-[#16a34a] hover:bg-green-700 text-white rounded font-bold text-[10px] transition active:scale-95 disabled:opacity-50"
+              >
+                Choose Image
+              </button>
             </div>
 
-            {/* 2. Floor Planning Image */}
+            {/* Floor Planning Image */}
             <div className="border border-slate-100 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4 bg-white text-center">
               <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Floor Planning Image</label>
-              <div className="w-28 h-28 border border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center text-slate-300 text-center">
-                <span className="text-[9px] font-bold text-slate-400 leading-none mb-1">NO IMAGE</span>
-                <span className="text-[9px] font-bold text-slate-400 leading-none">FOUND</span>
+              <div className="w-28 h-28 border border-dashed border-slate-200 bg-slate-50 rounded-xl overflow-hidden flex flex-col items-center justify-center text-slate-350 text-center relative shrink-0">
+                {floorPlanUrl ? (
+                  <img src={floorPlanUrl} alt="Floor Plan" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <span className="text-[9px] font-bold text-slate-400 leading-none mb-1">NO IMAGE</span>
+                    <span className="text-[9px] font-bold text-slate-400 leading-none">FOUND</span>
+                  </>
+                )}
+                {uploadingFloorPlan && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[9px] font-bold">
+                    Uploading...
+                  </div>
+                )}
               </div>
-              <button type="button" className="px-4 py-1.5 bg-blue-600 text-white rounded font-bold text-[10px] hover:bg-blue-700 transition">Choose Image</button>
+              <input type="file" ref={floorPlanInputRef} onChange={(e) => handleUploadFile(e, 'floorPlan')} accept="image/*" className="hidden" />
+              <button 
+                type="button" 
+                disabled={uploadingFloorPlan}
+                onClick={() => floorPlanInputRef.current.click()}
+                className="px-4 py-1.5 bg-[#16a34a] hover:bg-green-700 text-white rounded font-bold text-[10px] transition active:scale-95 disabled:opacity-50"
+              >
+                Choose Image
+              </button>
             </div>
 
-            {/* 3. Video Image */}
+            {/* Video Image */}
             <div className="border border-slate-100 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4 bg-white text-center">
               <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Video Image</label>
-              <div className="w-28 h-28 border border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center text-slate-300 text-center">
-                <span className="text-[9px] font-bold text-slate-400 leading-none mb-1">NO IMAGE</span>
-                <span className="text-[9px] font-bold text-slate-400 leading-none">FOUND</span>
+              <div className="w-28 h-28 border border-dashed border-slate-200 bg-slate-50 rounded-xl overflow-hidden flex flex-col items-center justify-center text-slate-350 text-center relative shrink-0">
+                {videoImageUrl ? (
+                  <img src={videoImageUrl} alt="Video thumb" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <span className="text-[9px] font-bold text-slate-400 leading-none mb-1">NO IMAGE</span>
+                    <span className="text-[9px] font-bold text-slate-400 leading-none">FOUND</span>
+                  </>
+                )}
+                {uploadingVideoImage && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[9px] font-bold">
+                    Uploading...
+                  </div>
+                )}
               </div>
-              <button type="button" className="px-4 py-1.5 bg-blue-600 text-white rounded font-bold text-[10px] hover:bg-blue-700 transition">Choose Image</button>
+              <input type="file" ref={videoImageInputRef} onChange={(e) => handleUploadFile(e, 'videoImage')} accept="image/*" className="hidden" />
+              <button 
+                type="button" 
+                disabled={uploadingVideoImage}
+                onClick={() => videoImageInputRef.current.click()}
+                className="px-4 py-1.5 bg-[#16a34a] hover:bg-green-700 text-white rounded font-bold text-[10px] transition active:scale-95 disabled:opacity-50"
+              >
+                Choose Image
+              </button>
             </div>
 
           </div>
 
           {/* Form details input grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs font-bold text-slate-700">
-            
             <div className="flex flex-col space-y-1.5">
               <label>Video Url</label>
               <input type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Enter Video url" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
@@ -376,20 +545,20 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
             <div className="flex flex-col space-y-1.5">
               <label>Country*</label>
-              <select value={country} onChange={(e) => { setCountry(e.target.value); setStateName(''); setCityName(''); }} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+              <select value={country} onChange={(e) => setCountry(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                 <option value="">Select Country</option>
                 {countries.map(c => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
+                  <option key={c._id} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>State*</label>
-              <select value={stateName} onChange={(e) => { setStateName(e.target.value); setCityName(''); }} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+              <select value={stateName} onChange={(e) => setStateName(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                 <option value="">Select State</option>
                 {filteredStates.map(s => (
-                  <option key={s._id} value={s._id}>{s.name}</option>
+                  <option key={s._id} value={s.name}>{s.name}</option>
                 ))}
               </select>
             </div>
@@ -399,115 +568,96 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
               <select value={cityName} onChange={(e) => setCityName(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                 <option value="">Select City</option>
                 {filteredCities.map(c => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
+                  <option key={c._id} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label>Amenities*</label>
-              <div className="relative">
-                <div className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 min-h-[36px] flex flex-wrap gap-1">
-                  {amenities.length === 0 ? (
-                    <span className="text-slate-400">Select Amenities</span>
-                  ) : (
-                    amenities.map(aId => {
-                      const am = amenitiesList.find(a => a._id === aId);
-                      return am ? (
-                        <span key={aId} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold flex items-center gap-1">
-                          {am.name}
-                          <button type="button" onClick={() => handleAmenityToggle(aId)} className="text-blue-400 hover:text-red-500">×</button>
-                        </span>
-                      ) : null;
-                    })
-                  )}
-                </div>
-                <div className="mt-1 max-h-32 overflow-y-auto border border-slate-100 rounded-lg bg-white shadow-sm">
-                  {amenitiesList.filter(a => a.status === 'Active').map(am => (
-                    <label key={am._id} className="flex items-center px-3 py-1.5 hover:bg-slate-50 cursor-pointer text-[10px] font-medium text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={amenities.includes(am._id)}
-                        onChange={() => handleAmenityToggle(am._id)}
-                        className="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3 h-3"
-                      />
-                      {am.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <label>Price*</label>
+              <input type="text" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Enter Price (e.g. 5000)" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
-            <div className="flex flex-col space-y-1.5">
-              <label>Price (NGN)*</label>
-              <div>
-                <input type="text" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Enter Current Price" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full" />
-                <p className="text-[9px] text-orange-400 font-bold mt-1 leading-none">If you leave it blank, price will be negotiable.</p>
-              </div>
-            </div>
-
-            {/* Beds and Baths (ONLY if Residential) */}
             {selectedType === 'residential' && (
               <>
                 <div className="flex flex-col space-y-1.5">
-                  <label>Beds*</label>
-                  <input type="text" value={beds} onChange={(e) => setBeds(e.target.value)} placeholder="Enter number of bed" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+                  <label>Beds</label>
+                  <input type="text" value={beds} onChange={(e) => setBeds(e.target.value)} placeholder="Enter Beds" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
                 </div>
+
                 <div className="flex flex-col space-y-1.5">
-                  <label>Baths*</label>
-                  <input type="text" value={baths} onChange={(e) => setBaths(e.target.value)} placeholder="Enter number of bath" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+                  <label>Baths</label>
+                  <input type="text" value={baths} onChange={(e) => setBaths(e.target.value)} placeholder="Enter Baths" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
                 </div>
               </>
             )}
 
             <div className="flex flex-col space-y-1.5">
               <label>Area (sqft)*</label>
-              <input type="text" value={area} onChange={(e) => setArea(e.target.value)} placeholder="Enter area (sqft)" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <input type="text" value={area} onChange={(e) => setArea(e.target.value)} placeholder="Enter Area" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>Status*</label>
               <select value={status} onChange={(e) => setStatus(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                 <option value="Active">Active</option>
-                <option value="Deactive">Deactive</option>
+                <option value="Inactive">Inactive</option>
               </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label>Latitude*</label>
+              <label>Latitude</label>
               <input type="text" value={latitude} onChange={(e) => setLatitude(e.target.value)} placeholder="Enter Latitude" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label>Longitude*</label>
+              <label>Longitude</label>
               <input type="text" value={longitude} onChange={(e) => setLongitude(e.target.value)} placeholder="Enter Longitude" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>Agent</label>
-              <div>
-                <select value={agent} onChange={(e) => setAgent(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
-                  <option value="">Select Agent</option>
-                  {agentsList.map(ag => (
-                    <option key={ag._id} value={ag._id}>{ag.name || ag.username}</option>
-                  ))}
-                </select>
-                <p className="text-[9px] text-orange-400 font-bold mt-1 leading-none">If you do not select any agent, then this property will be listed under you</p>
-              </div>
+              <select value={agent} onChange={(e) => setAgent(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+                <option value="">Select Agent</option>
+                {agentsList.map(a => (
+                  <option key={a._id} value={a._id}>{a.name}</option>
+                ))}
+              </select>
             </div>
+          </div>
 
+          {/* Amenities checklist */}
+          <div className="space-y-2.5 pt-2">
+            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Amenities*</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {amenitiesList.map(amenity => {
+                const isSelected = amenities.includes(amenity._id);
+                return (
+                  <button
+                    key={amenity._id}
+                    type="button"
+                    onClick={() => handleAmenityToggle(amenity._id)}
+                    className={`px-3 py-2.5 border rounded-xl font-bold text-[10px] uppercase text-center transition active:scale-95 ${
+                      isSelected 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {amenity.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
         </div>
 
         {/* ENGLISH LANGUAGE CARD */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium overflow-hidden">
-          {/* Header Bar */}
-          <div className="bg-[#6366f1] text-white px-6 py-3 text-xs font-extrabold tracking-wide uppercase">
+          <div className="bg-indigo-650 text-white px-6 py-3 text-xs font-extrabold tracking-wide uppercase bg-indigo-600/90">
             English Language (Default)
           </div>
           
-          {/* Fields */}
           <div className="p-6 space-y-4 text-xs font-bold text-slate-700">
             <div className="flex flex-col space-y-1.5">
               <label>Title*</label>
@@ -516,39 +666,28 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
             <div className="flex flex-col space-y-1.5">
               <label>Address*</label>
-              <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter Address" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter Address" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>Description*</label>
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                {/* Rich text mock bar */}
-                <div className="bg-slate-50 border-b border-slate-200 p-2 flex flex-wrap gap-2 text-[10px] text-slate-500 font-bold select-none">
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">File</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Edit</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">View</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Insert</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Format</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Tools</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Table</span>
-                </div>
-                <textarea 
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows="6"
-                  placeholder="Enter detailed property description..."
-                  className="w-full p-4 text-xs font-medium text-slate-800 focus:outline-none"
-                />
-              </div>
+              <textarea 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                rows="6"
+                placeholder="Enter detailed property description..."
+                className="bg-white border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-800 focus:outline-none w-full"
+              />
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label>Meta Keywords*</label>
+              <label>Meta Keywords</label>
               <input type="text" value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} placeholder="Enter Meta Keywords" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label>Meta Description*</label>
+              <label>Meta Description</label>
               <textarea value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="Enter Meta description" rows="3" className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
@@ -560,7 +699,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                 onChange={(e) => setTranslateArabic(e.target.checked)}
                 className="w-4 h-4 text-blue-600 border-slate-200 rounded focus:ring-blue-500" 
               />
-              <label htmlFor="arabicCheckbox" className="font-bold text-xs text-slate-650 cursor-pointer select-none">
+              <label htmlFor="arabicCheckbox" className="font-bold text-xs text-slate-655 cursor-pointer select-none">
                 Translate in Arabic language
               </label>
             </div>
@@ -570,12 +709,10 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
         {/* ARABIC LANGUAGE CARD */}
         {translateArabic && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-premium overflow-hidden animate-in slide-in-from-top-3 duration-250">
-            {/* Header Bar */}
-            <div className="bg-[#6366f1] text-white px-6 py-3 text-xs font-extrabold tracking-wide uppercase">
+            <div className="bg-indigo-650 text-white px-6 py-3 text-xs font-extrabold tracking-wide uppercase bg-indigo-600/90">
               Arabic Language
             </div>
             
-            {/* Fields */}
             <div className="p-6 space-y-4 text-xs font-bold text-slate-700">
               <div className="flex flex-col space-y-1.5">
                 <label>Title (Arabic)*</label>
@@ -599,11 +736,6 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 space-y-6">
           <h3 className="text-xs font-bold text-slate-800 border-b border-slate-50 pb-3">Additional Features (Optional)</h3>
           
-          <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3 text-[10px] font-bold text-orange-600">
-            You can add maximum 20 additional features under one property
-          </div>
-
-          {/* Table list of features */}
           <div className="space-y-4">
             <div className="grid grid-cols-12 gap-4 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">
               <div className="col-span-5">Label</div>
@@ -613,7 +745,6 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
             {features.map((row) => (
               <div key={row.id} className="grid grid-cols-12 gap-4 items-center border-b border-slate-50 pb-4 last:border-0">
-                {/* Inputs for English / Arabic labels and values */}
                 <div className="col-span-5 space-y-2">
                   <input
                     type="text"
@@ -648,28 +779,24 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                   />
                 </div>
 
-                {/* Actions (+/- buttons) */}
                 <div className="col-span-2 flex items-center justify-end space-x-1.5">
                   <button 
                     type="button" 
                     onClick={addFeatureRow}
-                    className="w-7 h-7 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg flex items-center justify-center transition active:scale-90"
-                    title="Add new feature row"
+                    className="w-7 h-7 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center transition active:scale-90"
                   >
                     <Plus size={14} />
                   </button>
                   <button 
                     type="button" 
                     onClick={() => removeFeatureRow(row.id)}
-                    className="w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center transition active:scale-90"
-                    title="Delete row"
+                    className="w-7 h-7 bg-red-500 hover:bg-red-650 text-white rounded-lg flex items-center justify-center transition active:scale-90"
                   >
                     <span className="text-lg leading-none font-bold">-</span>
                   </button>
                 </div>
               </div>
             ))}
-
           </div>
         </div>
 
@@ -678,7 +805,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
           <button 
             type="submit"
             disabled={submitting}
-            className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-emerald-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-blue-500/10"
           >
             {submitting ? 'Saving...' : 'Save'}
           </button>
@@ -689,11 +816,6 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
   );
 }
 
-
-
-// ============================================================
-// PROPERTY LIST TAB
-// ============================================================
 export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAddClick }) {
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
@@ -782,14 +904,16 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
             </select>
           </div>
 
-          {/* Add Property Button */}
-          <button 
-            onClick={onAddClick}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-md shadow-blue-500/10 self-end sm:self-auto"
-          >
-            <Plus size={14} />
-            <span>Add Property</span>
-          </button>
+          {/* Add Property Buttons */}
+          <div className="flex items-center space-x-2 self-end sm:self-auto">
+            <button 
+              onClick={onAddClick}
+              className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-md shadow-blue-500/10"
+            >
+              <Plus size={14} />
+              <span>Add Property</span>
+            </button>
+          </div>
         </div>
 
         {/* Table layout */}
@@ -841,11 +965,6 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
                       </select>
-                      {row.featured === 'Yes' && (
-                        <button type="button" className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold">
-                          Edit
-                        </button>
-                      )}
                     </div>
                   </td>
                   <td className="p-3">
@@ -860,10 +979,6 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
                         onClick={() => onDelete(row.id)}
@@ -895,6 +1010,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
         </div>
 
       </div>
+
     </div>
   );
 }

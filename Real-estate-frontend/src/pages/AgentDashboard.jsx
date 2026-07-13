@@ -21,7 +21,31 @@ export default function AgentDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [menuSearch, setMenuSearch] = useState('');
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('darkMode') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode);
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    return () => {
+      document.documentElement.classList.remove('dark');
+    };
+  }, [darkMode]);
+
+  // Dynamic stats & charts state
+  const [stats, setStats] = useState({
+    assignedProperties: 0,
+    assignedProjects: 0,
+    newLeads: 0,
+    appointments: 0,
+    messages: 0,
+  });
+  const [chartData, setChartData] = useState([]);
 
   // Expanded states for submenus
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
@@ -32,6 +56,13 @@ export default function AgentDashboard() {
   const [projectsList, setProjectsList] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
 
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    if (window.innerWidth < 640) {
+      setSidebarOpen(false);
+    }
+  };
+
   // Redirect if not authenticated as agent
   useEffect(() => {
     if (!loading && (!token || (user && user.role !== 'agent'))) {
@@ -39,21 +70,30 @@ export default function AgentDashboard() {
     }
   }, [token, loading, user, navigate]);
 
-  // Fetch properties assigned to this agent
+  // Fetch properties and projects assigned to this agent
   const fetchAgentData = async () => {
     if (!token) return;
     try {
       setDataLoading(true);
-      const resProps = await axiosInstance.get('/agent/properties');
+      const [resProps, resProjs, resStats, resChart] = await Promise.all([
+        axiosInstance.get('/agent/properties'),
+        axiosInstance.get('/agent/projects'),
+        axiosInstance.get('/agent/stats'),
+        axiosInstance.get('/agent/chart-data'),
+      ]);
+
       const normalizedProps = resProps.data.map(p => ({
         ...p,
         id: p._id,
         status: p.status === 'Approved' ? 'Active' : p.status
       }));
       setPropertiesList(normalizedProps);
+      setProjectsList(resProjs.data.map(p => ({ ...p, id: p._id })));
+      setStats(resStats.data);
+      setChartData(resChart.data);
       setDataLoading(false);
     } catch (err) {
-      console.error('Error fetching agent properties:', err);
+      console.error('Error fetching agent data:', err);
       setDataLoading(false);
     }
   };
@@ -69,41 +109,68 @@ export default function AgentDashboard() {
   };
 
   const handleAddProperty = async (prop) => {
-    setPropertiesList([
-      ...propertiesList,
-      {
-        id: Date.now().toString(),
-        name: prop.name,
-        price: prop.price,
-        tag: prop.tag,
-        type: prop.type,
+    try {
+      const res = await axiosInstance.post('/agent/properties', prop);
+      const newProp = {
+        ...res.data,
+        id: res.data._id,
         status: 'Active'
-      }
-    ]);
-    setActiveTab('properties-list');
+      };
+      setPropertiesList([...propertiesList, newProp]);
+      setActiveTab('properties-list');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add property');
+    }
   };
 
-  const handleDeleteProperty = (id) => {
-    setPropertiesList(propertiesList.filter(p => p.id !== id));
+  const handleDeleteProperty = async (id) => {
+    try {
+      await axiosInstance.delete(`/agent/properties/${id}`);
+      setPropertiesList(propertiesList.filter(p => p.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete property');
+    }
   };
 
-  const handleAddProject = (proj) => {
-    setProjectsList([
-      ...projectsList,
-      {
-        id: Date.now().toString(),
-        name: proj.name,
-        location: proj.location,
-        units: proj.units,
-        status: proj.status,
-        image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80'
-      }
-    ]);
-    setActiveTab('projects-list');
+  const handleUpdateProperty = async (id, updatedFields) => {
+    try {
+      const res = await axiosInstance.put(`/agent/properties/${id}`, updatedFields);
+      setPropertiesList(propertiesList.map(p => p.id === id ? { ...p, ...res.data, id: res.data._id } : p));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update property');
+    }
   };
 
-  const handleDeleteProject = (id) => {
-    setProjectsList(projectsList.filter(p => p.id !== id));
+  const handleAddProject = async (proj) => {
+    try {
+      const res = await axiosInstance.post('/agent/projects', proj);
+      const newProj = {
+        ...res.data,
+        id: res.data._id
+      };
+      setProjectsList([...projectsList, newProj]);
+      setActiveTab('projects-list');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add project');
+    }
+  };
+
+  const handleDeleteProject = async (id) => {
+    try {
+      await axiosInstance.delete(`/agent/projects/${id}`);
+      setProjectsList(projectsList.filter(p => p.id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete project');
+    }
+  };
+
+  const handleUpdateProject = async (id, updatedFields) => {
+    try {
+      const res = await axiosInstance.put(`/agent/projects/${id}`, updatedFields);
+      setProjectsList(projectsList.map(p => p.id === id ? { ...p, ...res.data, id: res.data._id } : p));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update project');
+    }
   };
 
   // Agent Menus Configuration
@@ -193,7 +260,52 @@ export default function AgentDashboard() {
               className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-100 cursor-pointer"
               onClick={() => setProfileExpanded(!profileExpanded)}
             />
+            {profileExpanded && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-slate-100 shadow-xl py-2 z-50 text-xs font-semibold text-slate-700 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="px-4 py-2 border-b border-slate-50">
+                  <p className="font-extrabold text-slate-800 truncate">{agentUser.name}</p>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{agentUser.email}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('edit-profile');
+                    setProfileExpanded(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 transition"
+                >
+                  My Profile
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('change-password');
+                    setProfileExpanded(false);
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 transition"
+                >
+                  Change Password
+                </button>
+                <div className="border-t border-slate-50 my-1"></div>
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate('/');
+                  }}
+                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition flex items-center space-x-1.5"
+                >
+                  <LogOut size={12} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Mobile Sidebar Toggle Button (visible only on mobile) */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="sm:hidden w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center justify-center active:scale-95 border border-slate-100"
+          >
+            <Menu size={16} />
+          </button>
         </div>
       </header>
 
@@ -204,15 +316,16 @@ export default function AgentDashboard() {
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="absolute top-4 left-4 z-50 p-2.5 bg-white text-slate-655 hover:text-slate-900 rounded-xl border border-slate-150 shadow-md hover:shadow-lg transition active:scale-95 animate-in fade-in zoom-in duration-200"
+            className="hidden sm:block absolute top-4 left-4 z-50 p-2.5 bg-white text-slate-655 hover:text-slate-900 rounded-xl border border-slate-150 shadow-md hover:shadow-lg transition active:scale-95 animate-in fade-in zoom-in duration-200"
           >
             <Menu size={16} />
           </button>
         )}
 
         {/* 2. Custom Left Sidebar */}
-        <aside className={`bg-white border-r border-slate-100 flex flex-col transition-all duration-300 shadow-sm shrink-0 sticky top-16 h-[calc(100vh-64px)] z-40 overflow-y-auto ${sidebarOpen ? 'w-64' : 'w-0 -translate-x-full overflow-hidden'
-          }`}>
+        <aside className={`bg-white border-r border-slate-100 flex flex-col transition-all duration-300 shadow-xl sm:shadow-sm shrink-0 absolute sm:sticky left-0 top-0 sm:top-16 h-[calc(100vh-64px)] z-40 overflow-y-auto ${
+          sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full overflow-hidden sm:w-0'
+        }`}>
 
           {/* Sidebar Header with Toggle */}
           <div className="p-4 flex items-center justify-between border-b border-slate-100 shrink-0">
@@ -313,8 +426,8 @@ export default function AgentDashboard() {
                     <button
                       onClick={toggleExpand}
                       className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${isActive && !isExpanded
-                          ? 'bg-blue-650 text-white shadow-md shadow-blue-500/10'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        ? 'bg-blue-650 text-white shadow-md shadow-blue-500/10'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                     >
                       <div className="flex items-center space-x-3">
@@ -331,10 +444,10 @@ export default function AgentDashboard() {
                           return (
                             <button
                               key={sub.id}
-                              onClick={() => setActiveTab(sub.id)}
+                              onClick={() => handleTabClick(sub.id)}
                               className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-[11px] font-bold text-left transition ${isSubActive
-                                  ? 'bg-blue-50 text-blue-600'
-                                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                                 }`}
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
@@ -351,10 +464,10 @@ export default function AgentDashboard() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleTabClick(item.id)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -388,16 +501,17 @@ export default function AgentDashboard() {
 
         {/* 3. Main Content Panel Area */}
         <main className={`flex-1 overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ${sidebarOpen
-            ? 'p-6 lg:p-10'
-            : 'pt-6 pb-6 pr-6 pl-16 lg:pt-10 lg:pb-10 lg:pr-10 lg:pl-24'
+          ? 'py-6 px-2 sm:px-6 lg:p-10'
+          : 'py-6 px-2 sm:pr-6 sm:pl-16 lg:pt-10 lg:pb-10 lg:pr-10 lg:pl-24'
           } space-y-8`}>
 
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'dashboard' && (
-            <AgentDashboardTab 
-              setActiveTab={setActiveTab} 
-              propertiesCount={propertiesList.length} 
-              projectsCount={projectsList.length}
+            <AgentDashboardTab
+              setActiveTab={handleTabClick}
+              propertiesCount={stats.assignedProperties}
+              projectsCount={stats.assignedProjects}
+              chartData={chartData}
             />
           )}
 
@@ -410,6 +524,7 @@ export default function AgentDashboard() {
               setActiveTab={setActiveTab}
               properties={propertiesList}
               onDelete={handleDeleteProperty}
+              onUpdate={handleUpdateProperty}
               onAddClick={() => setActiveTab('properties-add')}
             />
           )}
@@ -428,6 +543,7 @@ export default function AgentDashboard() {
               setActiveTab={setActiveTab}
               projects={projectsList}
               onDelete={handleDeleteProject}
+              onUpdate={handleUpdateProject}
               onAddClick={() => setActiveTab('projects-add')}
             />
           )}

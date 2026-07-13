@@ -158,3 +158,174 @@
     font-size: 13px !important;
   }
 }
+
+/* ==========================================================================
+   Dark Mode Theme System
+   ========================================================================== */
+
+/* Dark Mode Core Theme overrides */
+.dark body {
+  background-color: #0b0f19 !important; /* Slate-950/900 */
+  color: #f8fafc !important; /* text-slate-50 */
+}
+
+/* Force container backgrounds */
+.dark .bg-slate-50, 
+.dark .bg-slate-100\/50,
+.dark .bg-slate-50\/50,
+.dark .bg-slate-50\/30 {
+  background-color: #0b0f19 !important;
+}
+
+.dark .bg-slate-100 {
+  background-color: #1f2937 !important;
+}
+
+.dark .bg-slate-200 {
+  background-color: #374151 !important;
+}
+
+/* Force panel/card backgrounds */
+.dark .bg-white,
+.dark .bg-slate-100\/20,
+.dark .glassmorphism {
+  background-color: #111827 !important; /* Slate-900 / Slate-800 */
+  border-color: #1f2937 !important;
+}
+
+/* Header & Sidebar */
+.dark header, 
+.dark header.bg-white,
+.dark aside,
+.dark aside.bg-white {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+}
+
+/* Borders */
+.dark .border-slate-50,
+.dark .border-slate-100,
+.dark .border-slate-150,
+.dark .border-slate-200 {
+  border-color: #1f2937 !important;
+}
+
+/* Main typography color mappings */
+.dark .text-slate-950,
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700 {
+  color: #f3f4f6 !important;
+}
+.dark .text-slate-600,
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark .text-slate-650 {
+  color: #9ca3af !important;
+}
+.dark .text-slate-300 {
+  color: #d1d5db !important;
+}
+.dark .text-slate-950 {
+  color: #ffffff !important;
+}
+
+/* Specific component buttons & anchors */
+.dark .bg-slate-50:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100\/50:hover {
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+}
+
+/* Input, select, textarea controls */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #0b0f19 !important;
+  border-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6b7280 !important;
+}
+.dark select option {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Table styling */
+.dark tr {
+  border-color: #1f2937 !important;
+}
+.dark th {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+  border-color: #1f2937 !important;
+}
+.dark td {
+  border-color: #1f2937 !important;
+  color: #e5e7eb !important;
+}
+
+/* Modals, views, overlays */
+.dark .bg-black\/50, 
+.dark .bg-slate-900\/50,
+.dark .bg-slate-950\/50 {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* Dropdown popups & profile menus */
+.dark .absolute.bg-white,
+.dark .absolute.bg-slate-50 {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+  color: #ffffff !important;
+}
+.dark .absolute.bg-white button:hover,
+.dark .absolute.bg-slate-50 button:hover {
+  background-color: #1f2937 !important;
+}
+
+/* Custom indicator states */
+.dark .bg-indigo-50 {
+  background-color: #1e1b4b !important;
+  color: #c7d2fe !important;
+}
+.dark .bg-blue-50 {
+  background-color: #172554 !important;
+  color: #93c5fd !important;
+}
+.dark .bg-emerald-50,
+.dark .bg-green-50 {
+  background-color: #064e3b !important;
+  color: #a7f3d0 !important;
+}
+.dark .bg-amber-50,
+.dark .bg-yellow-50 {
+  background-color: #78350f !important;
+  color: #fde68a !important;
+}
+.dark .bg-red-50 {
+  background-color: #7f1d1d !important;
+  color: #fca5a5 !important;
+}
+.dark .bg-orange-50 {
+  background-color: #7c2d12 !important;
+  color: #ffedd5 !important;
+}
+
+/* Graphs and dashboards specific tags */
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: #1f2937 !important;
+}
+.dark .recharts-legend-item-text {
+  color: #f3f4f6 !important;
+}
+.dark .recharts-tooltip-wrapper .bg-white {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+  color: #ffffff !important;
+}

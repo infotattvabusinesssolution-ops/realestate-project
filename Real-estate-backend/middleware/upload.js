@@ -35,10 +35,11 @@ const upload = multer({
   },
 });
 
-// Configure upload fields for Project Management
 export const projectUpload = upload.fields([
   { name: 'image', maxCount: 1 },         // Feature image
   { name: 'gallery', maxCount: 10 },       // Project gallery images
   { name: 'floorPlans', maxCount: 10 },    // Floor plans
   { name: 'documents', maxCount: 5 }       // PDFs/Word brochures
 ]);
+
+export const singleUpload = upload.single('file');

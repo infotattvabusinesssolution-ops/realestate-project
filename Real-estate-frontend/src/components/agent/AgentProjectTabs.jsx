@@ -51,12 +51,29 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
       alert('Please fill out the Project Title and Minimum Price.');
       return;
     }
+    
     onSave({
       name: title,
-      location: address || 'Houston, TX',
-      units: '45 Units total, 12 Booked',
-      status: status
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      status: status,
+      address: address || '',
+      description: description || '',
+      metaKeywords: metaKeywords || '',
+      metaDesc: metaDesc || '',
+      titleAr: titleAr || '',
+      addressAr: addressAr || '',
+      descriptionAr: descriptionAr || '',
+      latitude: latitude || '',
+      longitude: longitude || '',
+      features: features.map(f => ({
+        labelEn: f.labelEn,
+        valueEn: f.valueEn,
+        labelAr: f.labelAr,
+        valueAr: f.valueAr
+      })).filter(f => f.labelEn || f.valueEn)
     });
+
     // Reset
     setMinPrice('');
     setMaxPrice('');
@@ -76,7 +93,7 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans">
       
       {/* Header Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
@@ -100,39 +117,6 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
             You can upload maximum 99 gallery images under one project
           </div>
 
-          {/* Two Upload Drop Boxes Side by Side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Gallery Images Drop Box */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Gallery Images**</label>
-              <div className="border border-dashed border-slate-200 rounded-2xl py-12 flex flex-col items-center justify-center bg-slate-50/30 hover:bg-slate-50 hover:border-green-400 transition cursor-pointer text-center">
-                <span className="text-xs font-semibold text-slate-450">Drop files here to upload</span>
-              </div>
-            </div>
-
-            {/* Floor Plan Images Drop Box */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Floor Plan Images**</label>
-              <div className="border border-dashed border-slate-200 rounded-2xl py-12 flex flex-col items-center justify-center bg-slate-50/30 hover:bg-slate-50 hover:border-green-400 transition cursor-pointer text-center">
-                <span className="text-xs font-semibold text-slate-450">Drop files here to upload</span>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Single Feature Image Card Selector */}
-          <div className="w-full md:w-1/3">
-            <div className="border border-slate-100 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4 bg-white text-center">
-              <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Feature Image*</label>
-              <div className="w-28 h-28 border border-dashed border-slate-200 bg-slate-50 rounded-xl flex flex-col items-center justify-center text-slate-300 text-center">
-                <span className="text-[9px] font-bold text-slate-400 leading-none mb-1">NO IMAGE</span>
-                <span className="text-[9px] font-bold text-slate-400 leading-none">FOUND</span>
-              </div>
-              <button type="button" className="px-4 py-1.5 bg-green-600 text-white rounded font-bold text-[10px] hover:bg-green-700 transition">Choose Image</button>
-            </div>
-          </div>
-
           {/* Form details input grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs font-bold text-slate-700">
             
@@ -150,7 +134,7 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
               <label>Status*</label>
               <select value={status} onChange={(e) => setStatus(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                 <option value="Complete">Complete</option>
-                <option value="Incomplete">Incomplete</option>
+                <option value="Ongoing">Ongoing</option>
               </select>
             </div>
 
@@ -181,38 +165,28 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
 
             <div className="flex flex-col space-y-1.5">
               <label>Address*</label>
-              <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter Address" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter Address" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>Description*</label>
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <div className="bg-slate-50 border-b border-slate-200 p-2 flex flex-wrap gap-2 text-[10px] text-slate-500 font-bold select-none">
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">File</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Edit</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">View</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Insert</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Format</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Tools</span>
-                  <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">Table</span>
-                </div>
-                <textarea 
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows="6"
-                  placeholder="Enter detailed project description..."
-                  className="w-full p-4 text-xs font-medium text-slate-800 focus:outline-none"
-                />
-              </div>
+              <textarea 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                rows="6"
+                placeholder="Enter detailed project description..."
+                className="bg-white border border-slate-200 rounded-xl p-4 text-xs font-medium text-slate-800 focus:outline-none w-full"
+              />
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label>Meta Keywords*</label>
+              <label>Meta Keywords</label>
               <input type="text" value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} placeholder="Enter Meta Keywords" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label>Meta Description*</label>
+              <label>Meta Description</label>
               <textarea value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="Enter Meta description" rows="3" className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-800 focus:outline-none" />
             </div>
 
@@ -261,10 +235,6 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 space-y-6">
           <h3 className="text-xs font-bold text-slate-800 border-b border-slate-50 pb-3">Additional Features (Optional)</h3>
           
-          <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3 text-[10px] font-bold text-orange-600">
-            You can add maximum 20 additional features under one project
-          </div>
-
           <div className="space-y-4">
             <div className="grid grid-cols-12 gap-4 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">
               <div className="col-span-5">Label</div>
@@ -345,12 +315,12 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
   );
 }
 
-export function AgentProjectListTab({ setActiveTab, projects, onDelete, onAddClick }) {
+export function AgentProjectListTab({ setActiveTab, projects, onDelete, onUpdate, onAddClick }) {
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
 
   const filteredMock = projects.filter(proj => 
-    proj.name.toLowerCase().includes(search.toLowerCase())
+    (proj.name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -364,7 +334,7 @@ export function AgentProjectListTab({ setActiveTab, projects, onDelete, onAddCli
           <span>&gt;</span>
           <span>Project Management</span>
           <span>&gt;</span>
-          <span className="text-slate-650">Projects</span>
+          <span className="text-slate-655">Projects</span>
         </div>
       </div>
 
@@ -414,7 +384,6 @@ export function AgentProjectListTab({ setActiveTab, projects, onDelete, onAddCli
                 </th>
                 <th className="p-3">Title</th>
                 <th className="p-3">Post by</th>
-                <th className="p-3">Type</th>
                 <th className="p-3">Approval Status</th>
                 <th className="p-3">Status</th>
                 <th className="p-3 text-right font-semibold">Actions</th>
@@ -426,25 +395,23 @@ export function AgentProjectListTab({ setActiveTab, projects, onDelete, onAddCli
                   <td className="p-3">
                     <input type="checkbox" className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-3.5 h-3.5" />
                   </td>
-                  <td className="p-3 font-medium text-green-600 hover:underline cursor-pointer">{row.name}</td>
+                  <td className="p-3 font-medium text-green-600 hover:underline cursor-pointer">
+                    {selectedLang === 'Arabic' && row.titleAr ? row.titleAr : row.name}
+                  </td>
                   <td className="p-3">
                     <span className="px-2.5 py-0.5 bg-green-600 text-white rounded-full text-[9px] font-bold uppercase">
                       Agent
                     </span>
                   </td>
                   <td className="p-3">
-                    <button type="button" className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold">
-                      Manage
-                    </button>
-                  </td>
-                  <td className="p-3">
                     <span className="px-2.5 py-0.5 bg-green-600 text-white rounded-full text-[9px] font-bold uppercase">
-                      Approved
+                      {row.approvalStatus || 'Approved'}
                     </span>
                   </td>
                   <td className="p-3">
                     <select 
-                      defaultValue={row.status || 'Complete'}
+                      value={row.status || 'Complete'}
+                      onChange={(e) => onUpdate(row.id, { status: e.target.value })}
                       className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-green-600 text-white border-0 focus:outline-none"
                     >
                       <option value="Complete">Complete</option>
@@ -453,14 +420,10 @@ export function AgentProjectListTab({ setActiveTab, projects, onDelete, onAddCli
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button type="button" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold flex items-center space-x-1">
-                        <span>Select</span>
-                        <ChevronDown size={8} />
-                      </button>
                       <button 
                         type="button" 
                         onClick={() => onDelete(row.id)}
-                        className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"
+                        className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition active:scale-90"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -470,7 +433,7 @@ export function AgentProjectListTab({ setActiveTab, projects, onDelete, onAddCli
               ))}
               {filteredMock.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="p-4 text-center text-slate-400">No projects found.</td>
+                  <td colSpan="6" className="p-4 text-center text-slate-400">No projects found.</td>
                 </tr>
               )}
             </tbody>

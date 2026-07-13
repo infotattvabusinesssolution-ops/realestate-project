@@ -1,35 +1,94 @@
-import React, { useState } from 'react';
-import { Home, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Home, ChevronDown, Camera } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AgentEditProfileTab() {
-  const [username, setUsername] = useState('rendall');
-  const [email, setEmail] = useState('rendall@estacy.com');
-  const [phone, setPhone] = useState('+1 (555) 123-4567');
-  
+  const { user, updateProfile } = useAuth();
+  const fileInputRef = useRef(null);
+
+  // States matching user schema
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [city, setCity] = useState('');
+  const [stateName, setStateName] = useState('');
+  const [zip, setZip] = useState('');
+  const [address, setAddress] = useState('');
+  const [details, setDetails] = useState('');
+
   const [showEmail, setShowEmail] = useState(true);
   const [showPhone, setShowPhone] = useState(true);
   const [showContactForm, setShowContactForm] = useState(true);
-
-  // English details states
-  const [name, setName] = useState('Rendall Vance');
-  const [country, setCountry] = useState('USA');
-  const [city, setCity] = useState('Miami');
-  const [stateName, setStateName] = useState('Florida');
-  const [zip, setZip] = useState('33101');
-  const [address, setAddress] = useState('88 Ocean Vista, Miami, FL');
-  const [details, setDetails] = useState(
-    "Rendall Vance is a certified real estate advisor with over 5 years of professional experience in advising client purchases, organizing tours, and securing high-profile residential assets. Specialized in high-ticket luxury condominiums and beachfront estates, Rendall offers premier property matches to clients."
-  );
-
   const [arabicExpanded, setArabicExpanded] = useState(false);
+  
+  const [updating, setUpdating] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const handleUpdate = (e) => {
+  // Load user data on mount/context change
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username || user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      setName(user.name || '');
+      setAvatar(user.avatar || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80');
+      setCity(user.city || '');
+      setStateName(user.state || '');
+      setZip(user.zip || '');
+      setAddress(user.address || '');
+      setDetails(user.specialization || '');
+    }
+  }, [user]);
+
+  // Image Upload handler
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setUploading(true);
+      const res = await axiosInstance.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setAvatar(res.data.url);
+      alert('Photo uploaded successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    alert('Profile updated successfully!');
+    try {
+      setUpdating(true);
+      await updateProfile({
+        name,
+        phone,
+        city,
+        state: stateName,
+        zip,
+        address,
+        specialization: details,
+        avatar
+      });
+      alert('Profile updated successfully!');
+    } catch (err) {
+      alert(err || 'Failed to update profile.');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans">
       
       {/* Header breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
@@ -57,40 +116,63 @@ export default function AgentEditProfileTab() {
             
             {/* Photo Uploader */}
             <div className="space-y-3">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Photo</span>
-              <div className="flex items-center space-x-4">
-                <img 
-                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80" 
-                  alt="Rendall Vance" 
-                  className="w-32 h-32 rounded-xl object-cover border border-slate-150 shadow-sm"
-                />
-                <button type="button" className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded font-bold text-[10px] transition active:scale-95">
-                  Choose Photo
-                </button>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide block">Profile Photo</span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="relative group w-24 h-24 shrink-0">
+                  <img 
+                    src={avatar} 
+                    alt={name || "Profile"} 
+                    className="w-24 h-24 rounded-2xl object-cover border border-slate-150 shadow-sm"
+                  />
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center text-white text-[9px] font-bold">
+                      Uploading...
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handlePhotoUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button 
+                    type="button" 
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current.click()}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl font-bold text-[10px] transition active:scale-95 flex items-center gap-1.5 shadow-md shadow-green-500/10"
+                  >
+                    <Camera size={12} />
+                    <span>{uploading ? 'Uploading...' : 'Choose Photo'}</span>
+                  </button>
+                  <p className="text-[9px] text-slate-400 font-semibold leading-relaxed">
+                    Pastes or uploads an image to represent your portal avatar.
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Inputs Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex flex-col space-y-1.5">
-                <label>Username*</label>
+                <label className="text-slate-500">Username (Read-Only)</label>
                 <input 
                   type="text" 
-                  required 
+                  disabled
                   value={username} 
-                  onChange={(e) => setUsername(e.target.value)} 
-                  className="bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+                  className="bg-slate-100 border border-slate-250 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 cursor-not-allowed" 
                 />
               </div>
 
               <div className="flex flex-col space-y-1.5">
-                <label>Email*</label>
+                <label className="text-slate-500">Email (Read-Only)</label>
                 <input 
                   type="email" 
-                  required 
+                  disabled
                   value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  className="bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+                  className="bg-slate-100 border border-slate-250 rounded-xl px-3 py-2 text-xs font-medium text-slate-500 cursor-not-allowed" 
                 />
               </div>
 
@@ -100,14 +182,14 @@ export default function AgentEditProfileTab() {
                   type="text" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
-                  className="bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
+                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
                 />
               </div>
             </div>
 
             {/* Checkboxes Row */}
             <div className="flex flex-wrap gap-6 pt-2">
-              <label className="flex items-center space-x-2 text-slate-700 select-none cursor-pointer">
+              <label className="flex items-center space-x-2 text-slate-750 select-none cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={showEmail} 
@@ -117,7 +199,7 @@ export default function AgentEditProfileTab() {
                 <span>Show Email Address</span>
               </label>
 
-              <label className="flex items-center space-x-2 text-slate-700 select-none cursor-pointer">
+              <label className="flex items-center space-x-2 text-slate-755 select-none cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={showPhone} 
@@ -127,7 +209,7 @@ export default function AgentEditProfileTab() {
                 <span>Show Phone Number</span>
               </label>
 
-              <label className="flex items-center space-x-2 text-slate-700 select-none cursor-pointer">
+              <label className="flex items-center space-x-2 text-slate-760 select-none cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={showContactForm} 
@@ -140,7 +222,7 @@ export default function AgentEditProfileTab() {
 
           </div>
 
-          {/* Green/Indigo Header Language Box: English */}
+          {/* English Language Details Card */}
           <div className="border border-slate-150 rounded-2xl overflow-hidden shadow-sm">
             <div className="bg-[#16a34a] text-white px-5 py-3 font-extrabold tracking-wide">
               English Language (Default)
@@ -154,16 +236,6 @@ export default function AgentEditProfileTab() {
                     required 
                     value={name} 
                     onChange={(e) => setName(e.target.value)} 
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
-                  />
-                </div>
-
-                <div className="flex flex-col space-y-1.5">
-                  <label>Country</label>
-                  <input 
-                    type="text" 
-                    value={country} 
-                    onChange={(e) => setCountry(e.target.value)} 
                     className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
                   />
                 </div>
@@ -187,17 +259,17 @@ export default function AgentEditProfileTab() {
                     className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
                   />
                 </div>
-              </div>
 
-              <div className="flex flex-col space-y-1.5">
-                <label>Zip Code</label>
-                <input 
-                  type="text" 
-                  value={zip} 
-                  onChange={(e) => setZip(e.target.value)} 
-                  placeholder="Enter Zip Code" 
-                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full md:w-1/2" 
-                />
+                <div className="flex flex-col space-y-1.5">
+                  <label>Zip Code</label>
+                  <input 
+                    type="text" 
+                    value={zip} 
+                    onChange={(e) => setZip(e.target.value)} 
+                    placeholder="Enter Zip Code" 
+                    className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full" 
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col space-y-1.5">
@@ -211,7 +283,7 @@ export default function AgentEditProfileTab() {
               </div>
 
               <div className="flex flex-col space-y-1.5">
-                <label>Details</label>
+                <label>Specialization / Details</label>
                 <textarea 
                   value={details} 
                   onChange={(e) => setDetails(e.target.value)} 
@@ -259,9 +331,10 @@ export default function AgentEditProfileTab() {
           <div className="flex justify-center pt-4">
             <button 
               type="submit" 
-              className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-green-500/10"
+              disabled={updating}
+              className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-green-500/10"
             >
-              Update
+              {updating ? 'Updating...' : 'Update'}
             </button>
           </div>
 

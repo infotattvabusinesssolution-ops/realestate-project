@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Image as ImageIcon } from 'lucide-react';
+import { Home, Image as ImageIcon, Camera } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import axiosInstance from '../../api/axiosInstance';
 
 export default function AdminEditProfileTab({ setActiveTab }) {
   const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
+  const fileInputRef = useRef(null);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -14,7 +16,9 @@ export default function AdminEditProfileTab({ setActiveTab }) {
   const [zip, setZip] = useState('');
   const [address, setAddress] = useState('');
   const [avatar, setAvatar] = useState('');
+  
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -27,6 +31,28 @@ export default function AdminEditProfileTab({ setActiveTab }) {
       setAvatar(user.avatar || '');
     }
   }, [user]);
+
+  // Image Upload handler
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setUploading(true);
+      const res = await axiosInstance.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setAvatar(res.data.url);
+      alert('Photo uploaded successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,21 +81,8 @@ export default function AdminEditProfileTab({ setActiveTab }) {
     }
   };
 
-  const handleSelectAvatar = () => {
-    const avatars = [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80'
-    ];
-    // Cycle or pick random / prompt for url
-    const currentIdx = avatars.indexOf(avatar);
-    const nextIdx = (currentIdx + 1) % avatars.length;
-    setAvatar(avatars[nextIdx]);
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans">
       {/* Heading & Breadcrumbs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100">
         <div>
@@ -92,20 +105,36 @@ export default function AdminEditProfileTab({ setActiveTab }) {
           <div className="flex flex-col space-y-2">
             <label>Avatar Picture</label>
             <div className="flex items-center space-x-4">
-              <div className="border border-slate-200 rounded-full w-24 h-24 overflow-hidden bg-slate-50 flex items-center justify-center">
+              <div className="border border-slate-200 rounded-full w-24 h-24 overflow-hidden bg-slate-50 flex items-center justify-center relative shrink-0">
                 {avatar ? (
                   <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <ImageIcon size={32} className="text-slate-350" />
                 )}
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[9px] font-bold">
+                    Uploading...
+                  </div>
+                )}
               </div>
-              <button 
-                type="button" 
-                onClick={handleSelectAvatar}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-sm"
-              >
-                Change Photo
-              </button>
+              <div className="space-y-2">
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button 
+                  type="button" 
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current.click()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5"
+                >
+                  <Camera size={14} />
+                  <span>{uploading ? 'Uploading...' : 'Choose Photo'}</span>
+                </button>
+              </div>
             </div>
           </div>
 

@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, Building2, HardHat, DollarSign, CheckCircle2, 
-  Clock, ShieldAlert, Plus, Check, X, ArrowUpRight, Search, 
-  Settings, ShieldCheck, LayoutDashboard, Sliders, Award, Mail, 
-  ClipboardList, Package, Menu, FileText, Users2, Globe, 
+import {
+  Users, Building2, HardHat, DollarSign, CheckCircle2,
+  Clock, ShieldAlert, Plus, Check, X, ArrowUpRight, Search,
+  Settings, ShieldCheck, LayoutDashboard, Sliders, Award, Mail,
+  ClipboardList, Package, Menu, FileText, Users2, Globe,
   ChevronDown, ChevronRight, Moon, Sun, Bell, LogOut, Key, UserCheck, Play, MessageSquare, LifeBuoy, Home, CreditCard
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, LineChart, Line, 
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend 
+import {
+  ResponsiveContainer, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
 import { adminStats, mockProperties, mockAgents } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
@@ -85,11 +85,26 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileExpanded, setProfileExpanded] = useState(false);
   const [menuSearch, setMenuSearch] = useState('');
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('darkMode') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode);
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    return () => {
+      document.documentElement.classList.remove('dark');
+    };
+  }, [darkMode]);
+
   const [properties, setProperties] = useState([]);
   const [globalProperties, setGlobalProperties] = useState([]);
   const [stats, setStats] = useState(null);
-  
+
   const [blogExpanded, setBlogExpanded] = useState(false);
   const [usersExpanded, setUsersExpanded] = useState(false);
   const [specsExpanded, setSpecsExpanded] = useState(false);
@@ -205,10 +220,10 @@ export default function AdminDashboard() {
   // Sidebar Menu Items config
   const sidebarMenus = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { 
-      id: 'property-specifications', 
-      name: 'Property Specifications', 
-      icon: Sliders, 
+    {
+      id: 'property-specifications',
+      name: 'Property Specifications',
+      icon: Sliders,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -220,10 +235,10 @@ export default function AdminDashboard() {
         { id: 'spec-cities', name: 'Cities' }
       ]
     },
-    { 
-      id: 'property-management', 
-      name: 'Property Management', 
-      icon: Building2, 
+    {
+      id: 'property-management',
+      name: 'Property Management',
+      icon: Building2,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -232,10 +247,10 @@ export default function AdminDashboard() {
         { id: 'property-manage', name: 'Manage Properties' }
       ]
     },
-    { 
-      id: 'featured-properties', 
-      name: 'Featured Properties', 
-      icon: Award, 
+    {
+      id: 'featured-properties',
+      name: 'Featured Properties',
+      icon: Award,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -247,10 +262,10 @@ export default function AdminDashboard() {
       ]
     },
     { id: 'property-messages', name: 'Property Messages', icon: Mail },
-    { 
-      id: 'project-management', 
-      name: 'Project Management', 
-      icon: ClipboardList, 
+    {
+      id: 'project-management',
+      name: 'Project Management',
+      icon: ClipboardList,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -260,10 +275,10 @@ export default function AdminDashboard() {
       ]
     },
     { id: 'agents', name: 'Agents', icon: Users2 },
-    { 
-      id: 'package-management', 
-      name: 'Package Management', 
-      icon: Package, 
+    {
+      id: 'package-management',
+      name: 'Package Management',
+      icon: Package,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -273,22 +288,22 @@ export default function AdminDashboard() {
     },
     { id: 'menu-builder', name: 'Menu Builder', icon: Menu },
     { id: 'payment-log', name: 'Payment Log', icon: FileText },
-    { 
-      id: 'users-management', 
-      name: 'Users Management', 
-      icon: Users, 
+    {
+      id: 'users-management',
+      name: 'Users Management',
+      icon: Users,
       hasCaret: true,
-      hasSubmenu: true, 
+      hasSubmenu: true,
       submenus: [
         { id: 'users-registered', name: 'Registered Users' },
         { id: 'users-add', name: 'Add User' },
         { id: 'users-subscribers', name: 'Subscribers' }
       ]
     },
-    { 
-      id: 'vendors-management', 
-      name: 'Vendors Management', 
-      icon: HardHat, 
+    {
+      id: 'vendors-management',
+      name: 'Vendors Management',
+      icon: HardHat,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -297,10 +312,10 @@ export default function AdminDashboard() {
         { id: 'vendor-add', name: 'Add vendor' }
       ]
     },
-    { 
-      id: 'support-tickets', 
-      name: 'Support Tickets', 
-      icon: LifeBuoy, 
+    {
+      id: 'support-tickets',
+      name: 'Support Tickets',
+      icon: LifeBuoy,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -311,10 +326,10 @@ export default function AdminDashboard() {
         { id: 'tickets-closed', name: 'Closed Tickets' }
       ]
     },
-    { 
-      id: 'home-page', 
-      name: 'Home Page', 
-      icon: Globe, 
+    {
+      id: 'home-page',
+      name: 'Home Page',
+      icon: Globe,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -332,10 +347,10 @@ export default function AdminDashboard() {
         { id: 'home-show-hide', name: 'Section Show/Hide' }
       ]
     },
-    { 
-      id: 'footer-management', 
-      name: 'Footer', 
-      icon: Menu, 
+    {
+      id: 'footer-management',
+      name: 'Footer',
+      icon: Menu,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -345,22 +360,22 @@ export default function AdminDashboard() {
       ]
     },
     { id: 'custom-pages', name: 'Custom Pages', icon: FileText, hasCaret: true },
-    { 
-      id: 'blog-management', 
-      name: 'Blog Management', 
-      icon: Globe, 
+    {
+      id: 'blog-management',
+      name: 'Blog Management',
+      icon: Globe,
       hasCaret: true,
-      hasSubmenu: true, 
+      hasSubmenu: true,
       submenus: [
         { id: 'blog-categories', name: 'Categories' },
         { id: 'blog-posts', name: 'Posts' }
       ]
     },
     { id: 'faq-management', name: 'FAQ Management', icon: ShieldAlert },
-    { 
-      id: 'advertisements', 
-      name: 'Advertisements', 
-      icon: Award, 
+    {
+      id: 'advertisements',
+      name: 'Advertisements',
+      icon: Award,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -369,10 +384,10 @@ export default function AdminDashboard() {
       ]
     },
     { id: 'announcement-popups', name: 'Announcement Popups', icon: Bell },
-    { 
-      id: 'payment-gateways', 
-      name: 'Payment Gateways', 
-      icon: CreditCard, 
+    {
+      id: 'payment-gateways',
+      name: 'Payment Gateways',
+      icon: CreditCard,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -380,10 +395,10 @@ export default function AdminDashboard() {
         { id: 'offline-gateways', name: 'Offline Gateways' }
       ]
     },
-    { 
-      id: 'admin-management', 
-      name: 'Admin Management', 
-      icon: ShieldCheck, 
+    {
+      id: 'admin-management',
+      name: 'Admin Management',
+      icon: ShieldCheck,
       hasCaret: true,
       hasSubmenu: true,
       submenus: [
@@ -395,7 +410,7 @@ export default function AdminDashboard() {
   ];
 
   // Filter menu options based on search input
-  const filteredMenus = sidebarMenus.filter(item => 
+  const filteredMenus = sidebarMenus.filter(item =>
     item.name.toLowerCase().includes(menuSearch.toLowerCase())
   );
 
@@ -432,7 +447,7 @@ export default function AdminDashboard() {
 
   return (
     <div className={`min-h-screen flex flex-col font-sans ${darkMode ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-800'}`}>
-      
+
       {/* 1. Full-Width Top Navigation Bar */}
       <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center space-x-4">
@@ -449,13 +464,8 @@ export default function AdminDashboard() {
 
         {/* Top Right Controls */}
         <div className="flex items-center space-x-4">
-          {/* Language Globe Icon (Purple styled badge) */}
-          <button className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition flex items-center justify-center">
-            <Globe size={16} />
-          </button>
-
           {/* Theme Toggle Button */}
-          <button 
+          <button
             onClick={() => setDarkMode(!darkMode)}
             className="w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center justify-center"
           >
@@ -473,7 +483,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Mobile Sidebar Toggle Button (visible only on mobile) */}
-          <button 
+          <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="sm:hidden w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center justify-center active:scale-95 border border-slate-100"
           >
@@ -484,26 +494,26 @@ export default function AdminDashboard() {
 
       {/* Main Container below Top Bar */}
       <div className="flex-1 flex relative">
-        
+
         {/* Floating Menu button when sidebar is closed */}
         {!sidebarOpen && (
-          <button 
+          <button
             onClick={() => setSidebarOpen(true)}
             className="hidden sm:block absolute top-4 left-4 z-50 p-2.5 bg-white text-slate-600 hover:text-slate-900 rounded-xl border border-slate-150 shadow-md hover:shadow-lg transition active:scale-95 animate-in fade-in zoom-in duration-200"
           >
             <Menu size={16} />
           </button>
         )}
-        
+
         {/* 2. Custom Left Sidebar */}
-        <aside className={`bg-white border-r border-slate-100 flex flex-col transition-all duration-300 shadow-sm shrink-0 sticky top-16 h-[calc(100vh-64px)] z-40 overflow-y-auto ${
-          sidebarOpen ? 'w-64' : 'w-0 -translate-x-full overflow-hidden'
+        <aside className={`bg-white border-r border-slate-100 flex flex-col transition-all duration-300 shadow-xl sm:shadow-sm shrink-0 absolute sm:sticky left-0 top-0 sm:top-16 h-[calc(100vh-64px)] z-40 overflow-y-auto ${
+          sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full overflow-hidden sm:w-0'
         }`}>
-          
+
           {/* Sidebar Header with Toggle */}
           <div className="p-4 flex items-center justify-between border-b border-slate-100 shrink-0">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Menu</span>
-            <button 
+            <button
               onClick={() => setSidebarOpen(false)}
               className="p-1.5 text-slate-500 hover:text-slate-850 hover:bg-slate-100 rounded-lg transition active:scale-95"
             >
@@ -513,15 +523,15 @@ export default function AdminDashboard() {
 
           {/* User Profile Card */}
           <div className="p-4 border-b border-slate-100">
-            <div 
+            <div
               onClick={() => setProfileExpanded(!profileExpanded)}
               className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition cursor-pointer"
             >
               <div className="flex items-center space-x-3">
-                <img 
-                  src={adminUser.avatar} 
-                  alt={adminUser.name} 
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100" 
+                <img
+                  src={adminUser.avatar}
+                  alt={adminUser.name}
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
                 />
                 <div>
                   <h4 className="font-extrabold text-sm text-slate-900 leading-none">{adminUser.name.split(' ')[0]}</h4>
@@ -534,7 +544,7 @@ export default function AdminDashboard() {
             {/* Profile Dropdown Expandable Options */}
             {profileExpanded && (
               <div className="mt-3 px-2 py-2 bg-slate-50 rounded-xl space-y-1 text-xs font-bold text-slate-600 animate-in slide-in-from-top-2 duration-200">
-                <button 
+                <button
                   onClick={() => {
                     setActiveTab('admin-edit-profile');
                     setProfileExpanded(false);
@@ -544,7 +554,7 @@ export default function AdminDashboard() {
                   <UserCheck size={14} className="text-slate-400" />
                   <span>Edit Profile</span>
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     setActiveTab('admin-change-password');
                     setProfileExpanded(false);
@@ -554,7 +564,7 @@ export default function AdminDashboard() {
                   <Key size={14} className="text-slate-400" />
                   <span>Change Password</span>
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     logout();
                     navigate('/');
@@ -580,7 +590,7 @@ export default function AdminDashboard() {
                 className="w-full bg-slate-50 border border-slate-100 hover:bg-slate-100/50 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all font-medium"
               />
               {menuSearch && (
-                <button 
+                <button
                   onClick={() => setMenuSearch('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
@@ -594,7 +604,7 @@ export default function AdminDashboard() {
           <nav className="p-4 space-y-1 flex-1">
             {filteredMenus.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id || 
+              const isActive = activeTab === item.id ||
                 (item.id === 'blog-management' && (activeTab === 'blog-posts' || activeTab === 'blog-categories')) ||
                 (item.id === 'users-management' && (activeTab === 'users-registered' || activeTab === 'users-add' || activeTab === 'users-subscribers')) ||
                 (item.id === 'property-specifications' && (activeTab === 'spec-settings' || activeTab === 'spec-categories' || activeTab === 'spec-amenities' || activeTab === 'spec-countries' || activeTab === 'spec-states' || activeTab === 'spec-cities')) ||
@@ -610,10 +620,10 @@ export default function AdminDashboard() {
                 (item.id === 'payment-gateways' && (activeTab === 'online-gateways' || activeTab === 'offline-gateways')) ||
                 (item.id === 'admin-management' && (activeTab === 'admin-roles' || activeTab === 'admin-list')) ||
                 (item.id === 'home-page' && (activeTab === 'home-hero' || activeTab === 'home-about' || activeTab === 'home-why-choose' || activeTab === 'home-brand' || activeTab === 'home-property' || activeTab === 'home-featured-property' || activeTab === 'home-counter' || activeTab === 'home-city' || activeTab === 'home-testimonial' || activeTab === 'home-vendor' || activeTab === 'home-subscribe' || activeTab === 'home-show-hide'));
-              
+
               if (item.hasSubmenu) {
                 let isExpanded = false;
-                let toggleExpand = () => {};
+                let toggleExpand = () => { };
                 if (item.id === 'blog-management') {
                   isExpanded = blogExpanded;
                   toggleExpand = () => setBlogExpanded(!blogExpanded);
@@ -661,11 +671,10 @@ export default function AdminDashboard() {
                   <div key={item.id} className="space-y-1">
                     <button
                       onClick={toggleExpand}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${
-                        isActive && !isExpanded
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10' 
+                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${isActive && !isExpanded
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         <Icon size={16} className={isActive && !isExpanded ? 'text-white' : 'text-slate-400'} />
@@ -673,7 +682,7 @@ export default function AdminDashboard() {
                       </div>
                       <ChevronDown size={12} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive && !isExpanded ? 'text-white' : 'text-slate-400'}`} />
                     </button>
-                    
+
                     {isExpanded && (
                       <div className="pl-6 space-y-1 py-1 border-l border-slate-100 ml-4">
                         {item.submenus.map((sub) => {
@@ -682,11 +691,10 @@ export default function AdminDashboard() {
                             <button
                               key={sub.id}
                               onClick={() => handleTabClick(sub.id)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-[11px] font-bold text-left transition ${
-                                isSubActive 
-                                  ? 'bg-blue-50 text-blue-600' 
+                              className={`w-full flex items-center space-x-3 px-4 py-2 rounded-lg text-[11px] font-bold text-left transition ${isSubActive
+                                  ? 'bg-blue-50 text-blue-600'
                                   : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
                               <span>{sub.name}</span>
@@ -709,11 +717,10 @@ export default function AdminDashboard() {
                       handleTabClick(item.id);
                     }
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${
-                    isActive 
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10' 
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 ${isActive
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center space-x-3">
                     <Icon size={16} className={isActive ? 'text-white' : 'text-slate-400'} />
@@ -733,16 +740,15 @@ export default function AdminDashboard() {
         </aside>
 
         {/* 3. Main Content Panel Area */}
-        <main className={`flex-1 overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ${
-          sidebarOpen 
-            ? 'py-6 px-2 sm:px-6 lg:p-10' 
+        <main className={`flex-1 overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ${sidebarOpen
+            ? 'py-6 px-2 sm:px-6 lg:p-10'
             : 'py-6 px-2 sm:pr-6 sm:pl-16 lg:pt-10 lg:pb-10 lg:pr-10 lg:pl-24'
-        } space-y-8`}>
-          
+          } space-y-8`}>
+
           {/* TAB 1: DASHBOARD VIEW (Matching the user's screenshot exactly!) */}
           {activeTab === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-300">
-              
+
               {/* Header Title */}
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-slate-800 tracking-tight">
@@ -752,9 +758,9 @@ export default function AdminDashboard() {
 
               {/* Grid of 5 Solid-Colored Stats Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-                
+
                 {/* Card 1: Payment Logs (Blue) */}
-                <div 
+                <div
                   onClick={() => setActiveTab('payment-log')}
                   className="bg-blue-600 text-white rounded-xl p-5 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                 >
@@ -770,7 +776,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Card 2: Blog (Sky Blue) */}
-                <div 
+                <div
                   onClick={() => setActiveTab('blog-posts')}
                   className="bg-sky-400 text-white rounded-xl p-5 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                 >
@@ -786,7 +792,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Card 3: Vendors (Purple) */}
-                <div 
+                <div
                   onClick={() => setActiveTab('vendor-list')}
                   className="bg-purple-600 text-white rounded-xl p-5 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                 >
@@ -802,7 +808,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Card 4: Users (Pink) */}
-                <div 
+                <div
                   onClick={() => setActiveTab('users-registered')}
                   className="bg-pink-500 text-white rounded-xl p-5 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                 >
@@ -818,7 +824,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Card 5: Subscribers (Dark Navy) */}
-                <div 
+                <div
                   onClick={() => setActiveTab('users-subscribers')}
                   className="bg-slate-800 text-white rounded-xl p-5 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                 >
@@ -837,7 +843,7 @@ export default function AdminDashboard() {
 
               {/* side-by-side Line Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
+
                 {/* Chart 1: Monthly Package Purchase (2026) */}
                 <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-premium">
                   <h3 className="text-sm font-bold text-slate-800 mb-6">Monthly Package Purchase (2026)</h3>
