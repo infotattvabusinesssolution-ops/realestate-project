@@ -268,45 +268,14 @@ export default function VendorDashboard() {
               src={user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
               alt={user?.name || 'Vendor'}
               className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-100 cursor-pointer"
-              onClick={() => setProfileExpanded(!profileExpanded)}
+              onClick={() => {
+                setProfileExpanded(!profileExpanded);
+                // If on mobile and opening, ensure sidebar is open
+                if (!profileExpanded && window.innerWidth < 640) {
+                  setSidebarOpen(true);
+                }
+              }}
             />
-            {profileExpanded && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-slate-100 shadow-xl py-2 z-50 text-xs font-semibold text-slate-700 animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="px-4 py-2 border-b border-slate-50">
-                  <p className="font-extrabold text-slate-800 truncate">{user?.name || 'Vendor'}</p>
-                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setActiveTab('edit-profile');
-                    setProfileExpanded(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 transition"
-                >
-                  My Profile
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('change-password');
-                    setProfileExpanded(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 transition"
-                >
-                  Change Password
-                </button>
-                <div className="border-t border-slate-50 my-1"></div>
-                <button
-                  onClick={() => {
-                    logout();
-                    navigate('/');
-                  }}
-                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition flex items-center space-x-1.5"
-                >
-                  <LogOut size={12} />
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Mobile Sidebar Toggle Button (visible only on mobile) */}
