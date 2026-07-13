@@ -157,7 +157,7 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// @desc    Change user password
+// @desc    Change user passwords
 // @route   PUT /api/auth/change-password
 // @access  Private
 export const changeUserPassword = async (req, res) => {
