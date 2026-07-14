@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminTicketSettingsAPI, updateAdminSettingsAPI } from '../../api/api';
 
 export default function AdvertisementsSettingsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function AdvertisementsSettingsTab({ setActiveTab }) {
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        const res = await axiosInstance.get('/admin/settings');
+        const res = await getAdminTicketSettingsAPI();
         setPublisherId(res.data.adsensePublisherId || '');
         setLoading(false);
       } catch (err) {
@@ -26,7 +26,7 @@ export default function AdvertisementsSettingsTab({ setActiveTab }) {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.put('/admin/settings', { adsensePublisherId: publisherId });
+      await updateAdminSettingsAPI({ adsensePublisherId: publisherId });
       alert('Google AdSense Publisher ID updated successfully!');
     } catch (err) {
       alert('Failed to update Google AdSense Publisher ID: ' + (err.response?.data?.message || err.message));

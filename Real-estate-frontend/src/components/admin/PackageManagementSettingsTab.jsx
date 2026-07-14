@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminPackageSettingsAPI, updateAdminPackageSettingsAPI } from '../../api/api';
 
 export default function PackageManagementSettingsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function PackageManagementSettingsTab({ setActiveTab }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axiosInstance.get('/admin/packages/settings');
+        const res = await getAdminPackageSettingsAPI();
         setRemindDays(res.data.packageRemindDays.toString());
       } catch (err) {
         console.error('Error fetching package settings:', err);
@@ -27,7 +27,7 @@ export default function PackageManagementSettingsTab({ setActiveTab }) {
     e.preventDefault();
     setSaving(true);
     try {
-      await axiosInstance.put('/admin/packages/settings', { packageRemindDays: Number(remindDays) });
+      await updateAdminPackageSettingsAPI({ packageRemindDays: Number(remindDays) });
       alert('Settings updated successfully!');
     } catch (err) {
       alert('Failed to update settings');

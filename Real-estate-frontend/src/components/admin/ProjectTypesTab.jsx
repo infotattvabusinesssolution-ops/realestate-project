@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminProjectTypesAPI, createAdminProjectTypeAPI, updateAdminProjectTypeAPI, deleteAdminProjectTypeAPI } from '../../api/api';
 
 export default function ProjectTypesTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function ProjectTypesTab({ setActiveTab }) {
   const fetchTypes = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/projects/types');
+      const res = await getAdminProjectTypesAPI();
       setProjectTypes(res.data);
     } catch (err) {
       console.error('Error fetching project types:', err);
@@ -55,10 +55,10 @@ export default function ProjectTypesTab({ setActiveTab }) {
     setSaving(true);
     try {
       if (editItem) {
-        const res = await axiosInstance.put(`/admin/projects/types/${editItem._id}`, form);
+        const res = await updateAdminProjectTypeAPI(editItem._id, form);
         setProjectTypes(projectTypes.map(p => p._id === editItem._id ? res.data : p));
       } else {
-        const res = await axiosInstance.post('/admin/projects/types', form);
+        const res = await createAdminProjectTypeAPI(form);
         setProjectTypes([...projectTypes, res.data]);
       }
       setShowModal(false);
@@ -72,7 +72,7 @@ export default function ProjectTypesTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this project type?')) return;
     try {
-      await axiosInstance.delete(`/admin/projects/types/${id}`);
+      await deleteAdminProjectTypeAPI(id);
       setProjectTypes(projectTypes.filter(p => p._id !== id));
     } catch (err) {
       alert('Failed to delete');

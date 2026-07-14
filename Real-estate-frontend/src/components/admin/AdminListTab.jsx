@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Settings } from 'lucide-react';
 import AddAdminModal from '../modal/admin/AddAdminModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminListAPI, deleteAdminAPI, createAdminAPI, updateAdminUserStatusAPI } from '../../api/api';
 
 export default function AdminListTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function AdminListTab({ setActiveTab }) {
   const fetchAdmins = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/admins');
+      const res = await getAdminListAPI();
       setAdmins(res.data);
       setLoading(false);
     } catch (err) {
@@ -48,7 +48,7 @@ export default function AdminListTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this admin?')) return;
     try {
-      await axiosInstance.delete(`/admin/admins/${id}`);
+      await deleteAdminAPI(id);
       setAdmins(admins.filter(a => a._id !== id));
       setSelectedIds(selectedIds.filter(x => x !== id));
       alert('Admin deleted successfully');
@@ -59,7 +59,7 @@ export default function AdminListTab({ setActiveTab }) {
 
   const handleAddAdmin = async (newAdmin) => {
     try {
-      const res = await axiosInstance.post('/admin/admins', newAdmin);
+      const res = await createAdminAPI(newAdmin);
       setAdmins([res.data, ...admins]);
       setIsModalOpen(false);
       alert('Admin added successfully!');
@@ -70,7 +70,7 @@ export default function AdminListTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, val) => {
     try {
-      await axiosInstance.put(`/admin/users/${id}/status`, { status: val });
+      await updateAdminUserStatusAPI(id, { status: val });
       setAdmins(prev => prev.map(a => a._id === id ? { ...a, status: val } : a));
       setStatusDropdownId(null);
       alert(`Admin status updated to ${val}`);

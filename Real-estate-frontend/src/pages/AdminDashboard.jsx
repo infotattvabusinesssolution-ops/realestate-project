@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { adminStats, mockProperties, mockAgents } from '../data/mockData';
 import { useAuth } from '../context/AuthContext';
-import axiosInstance from '../api/axiosInstance';
+import { getAdminStatsAPI, getAdminPropertiesAPI, approveAdminPropertyAPI, rejectAdminPropertyAPI } from '../api/api';
 import PaymentLogTab from '../components/admin/PaymentLogTab';
 import BlogPostsTab from '../components/admin/BlogPostsTab';
 import BlogCategoriesTab from '../components/admin/BlogCategoriesTab';
@@ -138,11 +138,11 @@ export default function AdminDashboard() {
   const fetchAdminData = async () => {
     if (!token) return;
     try {
-      const statsRes = await axiosInstance.get('/admin/stats');
+      const statsRes = await getAdminStatsAPI();
       setStats(statsRes.data);
       setProperties(statsRes.data.recentProperties);
 
-      const propsRes = await axiosInstance.get('/admin/properties');
+      const propsRes = await getAdminPropertiesAPI();
       const normalizedProps = propsRes.data.map(p => ({
         ...p,
         id: p._id,
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
 
   const handleApprove = async (id) => {
     try {
-      await axiosInstance.put(`/admin/properties/${id}/approve`);
+      await approveAdminPropertyAPI(id);
       setProperties(properties.map(p => p.id === id ? { ...p, status: 'Approved' } : p));
       setGlobalProperties(globalProperties.map(p => p.id === id ? { ...p, status: 'Approved' } : p));
     } catch (err) {
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
 
   const handleReject = async (id) => {
     try {
-      await axiosInstance.put(`/admin/properties/${id}/reject`);
+      await rejectAdminPropertyAPI(id);
       setProperties(properties.map(p => p.id === id ? { ...p, status: 'Rejected' } : p));
       setGlobalProperties(globalProperties.map(p => p.id === id ? { ...p, status: 'Rejected' } : p));
     } catch (err) {

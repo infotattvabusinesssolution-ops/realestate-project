@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, ChevronDown, Camera } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import axiosInstance from '../../api/axiosInstance';
+import { uploadFileAPI } from '../../api/api';
 
 export function VendorEditProfileTab() {
   const { user, updateProfile } = useAuth();
@@ -53,9 +53,7 @@ export function VendorEditProfileTab() {
 
     try {
       setUploading(true);
-      const res = await axiosInstance.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await uploadFileAPI(formData);
       setAvatar(res.data.url);
       alert('Photo uploaded successfully!');
     } catch (err) {

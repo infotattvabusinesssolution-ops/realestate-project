@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ChevronDown } from 'lucide-react';
 import PaymentDetailsModal from '../modal/admin/PaymentDetailsModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminPaymentsAPI, updateAdminPaymentAPI } from '../../api/api';
 
 export default function PaymentLogTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function PaymentLogTab({ setActiveTab }) {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/payments');
+      const res = await getAdminPaymentsAPI();
       setPaymentLogs(res.data || []);
     } catch (err) {
       console.error('Error fetching payment logs:', err);
@@ -31,7 +31,7 @@ export default function PaymentLogTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const res = await axiosInstance.put(`/admin/payments/${id}`, { status: newStatus });
+      const res = await updateAdminPaymentAPI(id, { status: newStatus });
       setPaymentLogs(prev => prev.map(log => log._id === id ? res.data : log));
       setStatusDropdownId(null);
     } catch (err) {

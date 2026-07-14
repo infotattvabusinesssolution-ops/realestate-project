@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Building2, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminPropertiesAPI, createAdminPropertyAPI } from '../../api/api';
 
 export default function PropertyManagementAddTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ export default function PropertyManagementAddTab({ setActiveTab }) {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const res = await axiosInstance.get('/admin/properties');
+        const res = await getAdminPropertiesAPI();
         const props = res.data;
         const commercial = props.filter(p => p.propertyType === 'Commercial').length;
         const residential = props.filter(p => p.propertyType === 'Residential').length;
@@ -51,7 +51,7 @@ export default function PropertyManagementAddTab({ setActiveTab }) {
     e.preventDefault();
     setSaving(true);
     try {
-      await axiosInstance.post('/admin/properties', {
+      await createAdminPropertyAPI({
         ...form,
         name: form.title,
         propertyType: selectedPropertyType,
@@ -62,7 +62,7 @@ export default function PropertyManagementAddTab({ setActiveTab }) {
       setShowForm(false);
       setForm({ title: '', price: '', type: 'Buy', address: '', city: '', beds: '', baths: '', area: '', image: '', tag: '', description: '' });
       // Re-fetch counts
-      const res = await axiosInstance.get('/admin/properties');
+      const res = await getAdminPropertiesAPI();
       const props = res.data;
       setCounts({
         commercial: props.filter(p => p.propertyType === 'Commercial').length,

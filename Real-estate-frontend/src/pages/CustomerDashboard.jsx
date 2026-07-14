@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Globe, ChevronDown, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import CustomerDashboardTab from '../components/customer/CustomerDashboardTab';
 import CustomerWishlistTab from '../components/customer/CustomerWishlistTab';
 import { CustomerSupportTicketsTab, CustomerCreateTicketTab } from '../components/customer/CustomerSupportTicketsTab';
@@ -9,7 +9,12 @@ import CustomerEditProfileTab from '../components/customer/CustomerEditProfileTa
 import CustomerPropertyDetailTab from '../components/customer/CustomerPropertyDetailTab';
 import CustomerTicketDetailView from '../components/customer/CustomerTicketDetailView';
 import { useAuth } from '../context/AuthContext';
-import axiosInstance from '../api/axiosInstance';
+import { 
+  getCustomerWishlistAPI, 
+  getCustomerStatsAPI, 
+  removeFromWishlistAPI, 
+  createCustomerTicketAPI 
+} from '../api/api';
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
@@ -19,6 +24,7 @@ export default function CustomerDashboard() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [wishlistItems, setWishlistItems] = useState([]);
   const [wishlistLoading, setWishlistLoading] = useState(true);
+  const [stats, setStats] = useState(null);
 
   // Authentication redirection
   useEffect(() => {
@@ -30,7 +36,7 @@ export default function CustomerDashboard() {
   // Fetch Wishlist Items from DB
   const fetchWishlist = async () => {
     try {
-      const res = await axiosInstance.get('/customer/wishlist');
+      const res = await getCustomerWishlistAPI();
       const normalized = res.data.map(item => ({
         ...item,
         id: item._id, // compatibility with frontend tables
@@ -43,15 +49,25 @@ export default function CustomerDashboard() {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await getCustomerStatsAPI();
+      setStats(res.data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchWishlist();
+      fetchStats();
     }
   }, [token]);
 
   const handleRemoveWishlist = async (id) => {
     try {
-      await axiosInstance.delete(`/customer/wishlist/${id}`);
+      await removeFromWishlistAPI(id);
       setWishlistItems(wishlistItems.filter(item => item.id !== id));
     } catch (err) {
       console.error('Failed to remove item:', err);
@@ -63,6 +79,20 @@ export default function CustomerDashboard() {
       await updateProfile(updatedUser);
     } catch (err) {
       alert(err || 'Failed to update profile');
+    }
+  };
+
+  const handleCreateTicket = async (newTicket) => {
+    try {
+      await createCustomerTicketAPI({
+        title: newTicket.subject,
+        urgency: 'Medium',
+        text: newTicket.desc
+      });
+      setActiveTab('tickets');
+    } catch (err) {
+      console.error('Failed to create support ticket:', err);
+      alert(err.response?.data?.message || 'Failed to create support ticket');
     }
   };
 
@@ -133,30 +163,8 @@ export default function CustomerDashboard() {
           </span>
         </div>
 
-        {/* Center Navigation Links */}
-        <nav className="hidden lg:flex items-center space-x-6 text-xs font-bold text-slate-700">
-          <button onClick={() => navigate('/')} className="hover:text-orange-500 flex items-center space-x-1 transition">
-            <span>Home</span>
-            <ChevronDown size={12} className="text-slate-400" />
-          </button>
-          <button className="hover:text-orange-500 transition">Properties</button>
-          <button className="hover:text-orange-500 transition">Projects</button>
-          <button className="hover:text-orange-500 transition">Pricing</button>
-          <button className="hover:text-orange-500 flex items-center space-x-1 transition">
-            <span>Pages</span>
-            <ChevronDown size={12} className="text-slate-400" />
-          </button>
-          <button className="hover:text-orange-500 transition">Contact</button>
-        </nav>
-
         {/* Right side actions */}
         <div className="flex items-center space-x-4">
-          {/* English with globe icon */}
-          <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-600 cursor-pointer hover:text-slate-900 transition">
-            <Globe size={14} className="text-slate-400" />
-            <span>English</span>
-          </div>
-
           {/* User selector */}
           <div className="flex items-center space-x-2">
             <button 
@@ -242,6 +250,7 @@ export default function CustomerDashboard() {
                 <CustomerDashboardTab 
                   user={user} 
                   wishlistItems={wishlistItems} 
+                  stats={stats}
                   onRemoveWishlist={handleRemoveWishlist}
                   onViewProperty={handleViewProperty}
                 />
@@ -283,9 +292,7 @@ export default function CustomerDashboard() {
               {activeTab === 'tickets-add' && (
                 <CustomerCreateTicketTab 
                   onBack={() => setActiveTab('tickets')}
-                  onSave={(newTicket) => {
-                    setActiveTab('tickets');
-                  }}
+                  onSave={handleCreateTicket}
                 />
               )}
             </div>

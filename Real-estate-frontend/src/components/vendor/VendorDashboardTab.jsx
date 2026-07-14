@@ -7,7 +7,7 @@ import {
   CartesianGrid, Tooltip, Legend 
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
-import axiosInstance from '../../api/axiosInstance';
+import { getVendorStatsAPI, getVendorChartDataAPI } from '../../api/api';
 
 export default function VendorDashboardTab({ setActiveTab }) {
   const { user } = useAuth();
@@ -20,8 +20,8 @@ export default function VendorDashboardTab({ setActiveTab }) {
       try {
         setLoading(true);
         const [statsRes, chartRes] = await Promise.all([
-          axiosInstance.get('/vendor/stats'),
-          axiosInstance.get('/vendor/chart-data'),
+          getVendorStatsAPI(),
+          getVendorChartDataAPI(),
         ]);
         setStats(statsRes.data);
         setChartData(chartRes.data);

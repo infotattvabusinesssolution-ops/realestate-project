@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Activity, Shield, Wind, Zap, Award, Check } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAmenitiesAPI, createSpecsAmenityAPI, updateSpecsAmenityStatusAPI } from '../../api/api';
 
 export default function PropertySpecsAmenitiesTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function PropertySpecsAmenitiesTab({ setActiveTab }) {
   const fetchAmenities = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/specs/amenities');
+      const res = await getAmenitiesAPI();
       const normalized = res.data.map(a => ({
         id: a._id,
         iconName: a.iconName,
@@ -45,7 +45,7 @@ export default function PropertySpecsAmenitiesTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await axiosInstance.put(`/specs/amenities/${id}/status`, { status: newStatus });
+      await updateSpecsAmenityStatusAPI(id, { status: newStatus });
       setAmenities(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
     } catch (err) {
       alert('Failed to change amenity status');
@@ -60,7 +60,7 @@ export default function PropertySpecsAmenitiesTab({ setActiveTab }) {
     }
 
     try {
-      const res = await axiosInstance.post('/specs/amenities', {
+      const res = await createSpecsAmenityAPI({
         iconName: modalForm.iconName || 'Award',
         name: modalForm.name,
         status: modalForm.status,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddFAQModal from '../modal/admin/AddFAQModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminFAQsAPI, deleteAdminFAQAPI, createAdminFAQAPI } from '../../api/api';
 
 export default function FAQManagementTab() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function FAQManagementTab() {
   const fetchFAQs = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(`/admin/faqs?lang=${lang}`);
+      const res = await getAdminFAQsAPI({ lang });
       setFaqs(res.data);
       setLoading(false);
     } catch (err) {
@@ -48,7 +48,7 @@ export default function FAQManagementTab() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this FAQ?')) return;
     try {
-      await axiosInstance.delete(`/admin/faqs/${id}`);
+      await deleteAdminFAQAPI(id);
       setFaqs(faqs.filter(f => f._id !== id));
       setSelectedIds(selectedIds.filter(x => x !== id));
       alert('FAQ deleted successfully');
@@ -59,7 +59,7 @@ export default function FAQManagementTab() {
 
   const handleAddFAQ = async (newFaq) => {
     try {
-      const res = await axiosInstance.post('/admin/faqs', newFaq);
+      const res = await createAdminFAQAPI(newFaq);
       setFaqs([res.data, ...faqs]);
       setIsModalOpen(false);
       alert('FAQ added successfully!');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Info } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminAnnouncementsAPI, deleteAdminAnnouncementAPI } from '../../api/api';
 
 export default function AnnouncementPopupsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function AnnouncementPopupsTab({ setActiveTab }) {
   const fetchPopups = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(`/admin/announcement-popups?lang=${lang}`);
+      const res = await getAdminAnnouncementsAPI({ lang });
       setPopups(res.data);
       setLoading(false);
     } catch (err) {
@@ -46,7 +46,7 @@ export default function AnnouncementPopupsTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this popup?')) return;
     try {
-      await axiosInstance.delete(`/admin/announcement-popups/${id}`);
+      await deleteAdminAnnouncementAPI(id);
       setPopups(popups.filter(p => p._id !== id));
       setSelectedIds(selectedIds.filter(x => x !== id));
       alert('Popup deleted successfully');

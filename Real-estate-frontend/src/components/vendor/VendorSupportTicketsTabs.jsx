@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Home, ShieldAlert, Download, CornerUpLeft, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import axiosInstance from '../../api/axiosInstance';
+import { 
+  getVendorSupportTicketsAPI, 
+  getVendorTicketDetailAPI, 
+  replyVendorTicketAPI, 
+  createVendorTicketAPI 
+} from '../../api/api';
 import { io } from 'socket.io-client';
 
 // 1. Support Tickets Tab — List & Details router
@@ -35,7 +40,7 @@ function VendorSupportTicketsListView({ onSelectTicket, onAddClick }) {
     const fetchTickets = async () => {
       try {
         setLoading(true);
-        const res = await axiosInstance.get('/vendor/tickets');
+        const res = await getVendorSupportTicketsAPI();
         setTickets(res.data);
       } catch (err) {
         console.error('Failed to load tickets:', err);
@@ -186,7 +191,7 @@ function VendorTicketDetailView({ ticket, onBack }) {
     const fetchTicketDetails = async () => {
       try {
         setLoading(true);
-        const res = await axiosInstance.get(`/vendor/tickets/${ticketId}`);
+        const res = await getVendorTicketDetailAPI(ticketId);
         const normalized = res.data.responses.map(r => ({
           id: r._id || Math.random().toString(),
           sender: r.senderName || 'Anonymous',
@@ -238,9 +243,7 @@ function VendorTicketDetailView({ ticket, onBack }) {
     if (!newReply.trim()) return;
 
     try {
-      const res = await axiosInstance.post(`/vendor/tickets/${ticketId}/reply`, {
-        text: newReply
-      });
+      const res = await replyVendorTicketAPI(ticketId, newReply);
 
       const addedResponse = res.data.responses[res.data.responses.length - 1];
 
@@ -436,7 +439,7 @@ export function VendorSupportTicketsAddTab({ setActiveTab }) {
 
     try {
       setSubmitting(true);
-      await axiosInstance.post('/vendor/tickets', {
+      await createVendorTicketAPI({
         title: subject,
         urgency,
         text: desc || subject,

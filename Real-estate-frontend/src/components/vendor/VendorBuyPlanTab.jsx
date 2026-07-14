@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../../api/axiosInstance';
+import { getPackagesAPI, getVendorPaymentLogsAPI, createVendorCheckoutSessionAPI } from '../../api/api';
 
 export function VendorBuyPlanTab() {
   const [packages, setPackages] = useState([]);
@@ -17,8 +17,8 @@ export function VendorBuyPlanTab() {
     try {
       setLoading(true);
       const [pkgRes, logsRes] = await Promise.all([
-        axiosInstance.get('/packages'),
-        axiosInstance.get('/vendor/payment-logs'),
+        getPackagesAPI(),
+        getVendorPaymentLogsAPI(),
       ]);
       
       setPackages(pkgRes.data);
@@ -47,7 +47,7 @@ export function VendorBuyPlanTab() {
   const handleBuyPlan = async (planId, planName) => {
     try {
       setPurchasingId(planId);
-      const res = await axiosInstance.post('/vendor/create-checkout-session', {
+      const res = await createVendorCheckoutSessionAPI({
         packageId: planId,
       });
       // Redirect to simulated Stripe Checkout page

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchCountriesAPI, fetchStatesAPI, fetchCitiesAPI } from '../../api/api';
 
 export default function CustomerEditProfileTab({ user = {}, onUpdateUser }) {
   const [name, setName] = useState(user.name || 'Test User new');
@@ -11,6 +12,77 @@ export default function CustomerEditProfileTab({ user = {}, onUpdateUser }) {
   const [stateName, setStateName] = useState(user.state || 'California');
   const [zip, setZip] = useState(user.zip || '75846');
   const [address, setAddress] = useState(user.address || '123 Queen Street West');
+
+  const [countriesList, setCountriesList] = useState([]);
+  const [statesList, setStatesList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
+  const [countriesLoading, setCountriesLoading] = useState(false);
+  const [statesLoading, setStatesLoading] = useState(false);
+  const [citiesLoading, setCitiesLoading] = useState(false);
+
+  useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        setCountriesLoading(true);
+        const data = await fetchCountriesAPI();
+        setCountriesList(data);
+      } catch (err) {
+        console.error('Failed to load countries:', err);
+      } finally {
+        setCountriesLoading(false);
+      }
+    };
+    loadCountries();
+  }, []);
+
+  useEffect(() => {
+    const loadStates = async () => {
+      if (!country) {
+        setStatesList([]);
+        return;
+      }
+      try {
+        setStatesLoading(true);
+        const data = await fetchStatesAPI(country);
+        setStatesList(data);
+      } catch (err) {
+        console.error('Failed to load states:', err);
+      } finally {
+        setStatesLoading(false);
+      }
+    };
+    loadStates();
+  }, [country]);
+
+  useEffect(() => {
+    const loadCities = async () => {
+      if (!country || !stateName) {
+        setCitiesList([]);
+        return;
+      }
+      try {
+        setCitiesLoading(true);
+        const data = await fetchCitiesAPI(country, stateName);
+        setCitiesList(data);
+      } catch (err) {
+        console.error('Failed to load cities:', err);
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+    loadCities();
+  }, [country, stateName]);
+
+  const handleCountryChange = (val) => {
+    setCountry(val);
+    setStateName('');
+    setCity('');
+  };
+
+  const handleStateChange = (val) => {
+    setStateName(val);
+    setCity('');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -92,32 +164,46 @@ export default function CustomerEditProfileTab({ user = {}, onUpdateUser }) {
 
             <div className="flex flex-col space-y-1.5">
               <label className="text-slate-655 font-extrabold">Country</label>
-              <input 
-                type="text" 
+              <select 
                 value={country} 
-                onChange={(e) => setCountry(e.target.value)} 
-                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50" 
-              />
-            </div>
-
-            <div className="flex flex-col space-y-1.5">
-              <label className="text-slate-655 font-extrabold">City</label>
-              <input 
-                type="text" 
-                value={city} 
-                onChange={(e) => setCity(e.target.value)} 
-                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50" 
-              />
+                onChange={(e) => handleCountryChange(e.target.value)} 
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50 w-full"
+              >
+                <option value="">{countriesLoading ? 'Loading countries...' : 'Select Country'}</option>
+                {countriesList.map((c, idx) => (
+                  <option key={idx} value={c.name}>{c.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label className="text-slate-655 font-extrabold">State</label>
-              <input 
-                type="text" 
+              <select 
                 value={stateName} 
-                onChange={(e) => setStateName(e.target.value)} 
-                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" 
-              />
+                onChange={(e) => handleStateChange(e.target.value)} 
+                disabled={!country || statesLoading}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full disabled:opacity-50"
+              >
+                <option value="">{statesLoading ? 'Loading states...' : 'Select State'}</option>
+                {statesList.map((s, idx) => (
+                  <option key={idx} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-slate-655 font-extrabold">City</label>
+              <select 
+                value={city} 
+                onChange={(e) => setCity(e.target.value)} 
+                disabled={!stateName || citiesLoading}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50 w-full disabled:opacity-50"
+              >
+                <option value="">{citiesLoading ? 'Loading cities...' : 'Select City'}</option>
+                {citiesList.map((c, idx) => (
+                  <option key={idx} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">

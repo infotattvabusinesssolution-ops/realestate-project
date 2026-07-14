@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Home } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { changePasswordAPI } from '../../api/api';
 
 export function VendorChangePasswordTab() {
-  const { changePassword } = useAuth();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -19,7 +18,7 @@ export function VendorChangePasswordTab() {
     
     try {
       setSubmitting(true);
-      await changePassword(current, newPass);
+      await changePasswordAPI(current, newPass);
       alert('Password updated successfully!');
       setCurrent('');
       setNewPass('');

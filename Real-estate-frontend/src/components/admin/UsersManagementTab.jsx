@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ChevronDown, Search } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminUsersAPI, deleteAdminUserAPI, updateAdminUserStatusAPI } from '../../api/api';
 
 export default function UsersManagementTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function UsersManagementTab({ setActiveTab }) {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/users?role=customer');
+      const res = await getAdminUsersAPI({ role: 'customer' });
       const normalized = res.data.map(u => ({
         id: u._id,
         name: u.name,
@@ -34,7 +34,7 @@ export default function UsersManagementTab({ setActiveTab }) {
   const handleDeleteUser = async (id) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
     try {
-      await axiosInstance.delete(`/admin/users/${id}`);
+      await deleteAdminUserAPI(id);
       setUsers(prev => prev.filter(u => u.id !== id));
       setActionDropdownId(null);
       alert('User removed successfully');
@@ -57,7 +57,7 @@ export default function UsersManagementTab({ setActiveTab }) {
 
   const handleAccountStatusChange = async (id, newStatus) => {
     try {
-      await axiosInstance.put(`/admin/users/${id}/status`, {
+      await updateAdminUserStatusAPI(id, {
         isActive: newStatus === 'Active'
       });
       setUsers(users.map(u => u.id === id ? { ...u, accountStatus: newStatus } : u));

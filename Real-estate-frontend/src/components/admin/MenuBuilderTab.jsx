@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ChevronUp, ChevronDown, Edit2, Trash2, Plus, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminMenusAPI, syncAdminMenusAPI } from '../../api/api';
 
 const initialBuiltIn = [
   { name: 'Home', url: '/', isCustom: false },
@@ -33,7 +33,7 @@ export default function MenuBuilderTab({ setActiveTab }) {
   const fetchMenus = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/menus');
+      const res = await getAdminMenusAPI();
       setWebsiteMenus(res.data || []);
     } catch (err) {
       console.error('Error fetching menus:', err);
@@ -124,7 +124,7 @@ export default function MenuBuilderTab({ setActiveTab }) {
   const handleSyncUpdate = async () => {
     setSaving(true);
     try {
-      const res = await axiosInstance.post('/admin/menus/sync', { menus: websiteMenus });
+      const res = await syncAdminMenusAPI({ menus: websiteMenus });
       setWebsiteMenus(res.data);
       alert('Navigation menu structure updated successfully!');
     } catch (err) {

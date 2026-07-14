@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
+import { 
+  getAgentProjectsAPI, 
+  createAgentProjectAPI, 
+  updateAgentProjectAPI, 
+  deleteAgentProjectAPI 
+} from '../../api/api';
 
-export function AgentProjectAddTab({ setActiveTab, onSave }) {
+export function AgentProjectAddTab({ setActiveTab }) {
   // Form fields state
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [status, setStatus] = useState('Complete');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   // Language fields state
   const [title, setTitle] = useState('');
@@ -45,51 +52,43 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !minPrice) {
       alert('Please fill out the Project Title and Minimum Price.');
       return;
     }
     
-    onSave({
-      name: title,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-      status: status,
-      address: address || '',
-      description: description || '',
-      metaKeywords: metaKeywords || '',
-      metaDesc: metaDesc || '',
-      titleAr: titleAr || '',
-      addressAr: addressAr || '',
-      descriptionAr: descriptionAr || '',
-      latitude: latitude || '',
-      longitude: longitude || '',
-      features: features.map(f => ({
-        labelEn: f.labelEn,
-        valueEn: f.valueEn,
-        labelAr: f.labelAr,
-        valueAr: f.valueAr
-      })).filter(f => f.labelEn || f.valueEn)
-    });
-
-    // Reset
-    setMinPrice('');
-    setMaxPrice('');
-    setStatus('Complete');
-    setLatitude('');
-    setLongitude('');
-    setTitle('');
-    setAddress('');
-    setDescription('');
-    setMetaKeywords('');
-    setMetaDesc('');
-    setTranslateArabic(false);
-    setTitleAr('');
-    setAddressAr('');
-    setDescriptionAr('');
-    setFeatures([{ id: Date.now(), labelEn: 'Label (English)', valueEn: 'Value (English)', labelAr: 'Label (Arabic)', valueAr: 'Value (Arabic)' }]);
+    try {
+      setSubmitting(true);
+      await createAgentProjectAPI({
+        name: title,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        status: status,
+        address: address || '',
+        description: description || '',
+        metaKeywords: metaKeywords || '',
+        metaDesc: metaDesc || '',
+        titleAr: titleAr || '',
+        addressAr: addressAr || '',
+        descriptionAr: descriptionAr || '',
+        latitude: latitude || '',
+        longitude: longitude || '',
+        features: features.map(f => ({
+          labelEn: f.labelEn,
+          valueEn: f.valueEn,
+          labelAr: f.labelAr,
+          valueAr: f.valueAr
+        })).filter(f => f.labelEn || f.valueEn)
+      });
+      alert('Project created successfully!');
+      setActiveTab('projects-list');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add project');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -103,7 +102,7 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
           <span>&gt;</span>
           <span>Project Management</span>
           <span>&gt;</span>
-          <span className="text-slate-600">Add Project</span>
+          <span className="text-slate-655">Add Project</span>
         </div>
       </div>
 
@@ -111,7 +110,7 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
         
         {/* Main form fields box */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 space-y-6">
-          <h3 className="text-xs font-bold text-slate-800 border-b border-slate-50 pb-3">Add Project</h3>
+          <h3 className="text-xs font-bold text-slate-800 border-b border-slate-55 pb-3">Add Project</h3>
           
           <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3 text-[10px] font-bold text-orange-600">
             You can upload maximum 99 gallery images under one project
@@ -304,9 +303,10 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
         <div className="flex justify-center pt-6">
           <button 
             type="submit"
-            className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-green-500/10"
+            disabled={submitting}
+            className="px-8 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-green-500/10"
           >
-            Save
+            {submitting ? 'Saving...' : 'Save'}
           </button>
         </div>
 
@@ -315,16 +315,55 @@ export function AgentProjectAddTab({ setActiveTab, onSave }) {
   );
 }
 
-export function AgentProjectListTab({ setActiveTab, projects, onDelete, onUpdate, onAddClick }) {
+export function AgentProjectListTab({ setActiveTab, onAddClick }) {
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const res = await getAgentProjectsAPI();
+      setProjects(res.data.map(p => ({ ...p, id: p._id })));
+    } catch (err) {
+      console.error('Failed to load agent projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+    try {
+      await deleteAgentProjectAPI(id);
+      setProjects(prev => prev.filter(p => p.id !== id));
+      alert('Project deleted successfully!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete project');
+    }
+  };
+
+  const handleStatusChange = async (id, statusVal) => {
+    try {
+      const res = await updateAgentProjectAPI(id, { status: statusVal });
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...res.data, id: res.data._id } : p));
+      alert('Project status updated!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update project status');
+    }
+  };
 
   const filteredMock = projects.filter(proj => 
     (proj.name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 font-sans">
       
       {/* Header & Breadcrumbs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
@@ -351,13 +390,13 @@ export function AgentProjectListTab({ setActiveTab, projects, onDelete, onUpdate
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Title"
-              className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-800 focus:outline-none w-48 font-medium"
+              className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none w-48 font-medium"
             />
 
             <select
               value={selectedLang}
               onChange={(e) => setSelectedLang(e.target.value)}
-              className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-800 focus:outline-none w-28"
+              className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none w-28 font-medium"
             >
               <option value="English">English</option>
               <option value="Arabic">Arabic</option>
@@ -374,71 +413,79 @@ export function AgentProjectListTab({ setActiveTab, projects, onDelete, onUpdate
           </button>
         </div>
 
-        {/* Projects Table layout */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
-                <th className="p-3 w-8">
-                  <input type="checkbox" className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-3.5 h-3.5" />
-                </th>
-                <th className="p-3">Title</th>
-                <th className="p-3">Post by</th>
-                <th className="p-3">Approval Status</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredMock.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50/50 transition bg-white">
-                  <td className="p-3">
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          /* Projects Table layout */
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 font-bold bg-slate-50/50">
+                  <th className="p-3 w-8">
                     <input type="checkbox" className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-3.5 h-3.5" />
-                  </td>
-                  <td className="p-3 font-medium text-green-600 hover:underline cursor-pointer">
-                    {selectedLang === 'Arabic' && row.titleAr ? row.titleAr : row.name}
-                  </td>
-                  <td className="p-3">
-                    <span className="px-2.5 py-0.5 bg-green-600 text-white rounded-full text-[9px] font-bold uppercase">
-                      Agent
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <span className="px-2.5 py-0.5 bg-green-600 text-white rounded-full text-[9px] font-bold uppercase">
-                      {row.approvalStatus || 'Approved'}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <select 
-                      value={row.status || 'Complete'}
-                      onChange={(e) => onUpdate(row.id, { status: e.target.value })}
-                      className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-green-600 text-white border-0 focus:outline-none"
-                    >
-                      <option value="Complete">Complete</option>
-                      <option value="Ongoing">Ongoing</option>
-                    </select>
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex items-center justify-end space-x-1.5">
-                      <button 
-                        type="button" 
-                        onClick={() => onDelete(row.id)}
-                        className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition active:scale-90"
+                  </th>
+                  <th className="p-3">Title</th>
+                  <th className="p-3">Post by</th>
+                  <th className="p-3">Approval Status</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredMock.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50/50 transition bg-white">
+                    <td className="p-3">
+                      <input type="checkbox" className="rounded border-slate-300 text-green-600 focus:ring-green-500 w-3.5 h-3.5" />
+                    </td>
+                    <td className="p-3 font-medium text-green-600 hover:underline cursor-pointer">
+                      {selectedLang === 'Arabic' && row.titleAr ? row.titleAr : row.name}
+                    </td>
+                    <td className="p-3 font-bold text-slate-700">
+                      <span className="px-2.5 py-0.5 bg-green-600 text-white rounded-full text-[9px] font-bold uppercase">
+                        Agent
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="px-2.5 py-0.5 bg-green-600 text-white rounded-full text-[9px] font-bold uppercase">
+                        {row.approvalStatus || 'Approved'}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <select 
+                        value={row.status || 'Complete'}
+                        onChange={(e) => handleStatusChange(row.id, e.target.value)}
+                        className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-green-600 text-white border-0 focus:outline-none"
                       >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredMock.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="p-4 text-center text-slate-400">No projects found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        <option value="Complete">Complete</option>
+                        <option value="Ongoing">Ongoing</option>
+                      </select>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end space-x-1.5">
+                        <button 
+                          type="button" 
+                          onClick={() => handleDelete(row.id)}
+                          className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition active:scale-90"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredMock.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="p-4 text-center text-slate-400">No projects found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* Footer pagination */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 text-xs text-slate-500 font-medium">

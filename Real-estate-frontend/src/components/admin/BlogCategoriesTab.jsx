@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddBlogCategoryModal from '../modal/admin/AddBlogCategoryModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminBlogCategoriesAPI, deleteAdminBlogCategoryAPI, createAdminBlogCategoryAPI } from '../../api/api';
 
 export default function BlogCategoriesTab() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function BlogCategoriesTab() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(`/admin/blog/categories?lang=${lang}`);
+      const res = await getAdminBlogCategoriesAPI({ lang });
       setCategories(res.data);
       setLoading(false);
     } catch (err) {
@@ -48,7 +48,7 @@ export default function BlogCategoriesTab() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this category?')) return;
     try {
-      await axiosInstance.delete(`/admin/blog/categories/${id}`);
+      await deleteAdminBlogCategoryAPI(id);
       setCategories(categories.filter(c => c._id !== id));
       setSelectedIds(selectedIds.filter(x => x !== id));
       alert('Category deleted successfully');
@@ -59,7 +59,7 @@ export default function BlogCategoriesTab() {
 
   const handleAddCategory = async (newCat) => {
     try {
-      const res = await axiosInstance.post('/admin/blog/categories', newCat);
+      const res = await createAdminBlogCategoryAPI(newCat);
       setCategories([...categories, res.data]);
       setIsModalOpen(false);
       alert('Category added successfully!');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminProjectsAPI, approveAdminProjectAPI, toggleAdminProjectFeaturedAPI, toggleAdminProjectStatusAPI, deleteAdminProjectAPI } from '../../api/api';
 
 export default function ProjectManagementListTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function ProjectManagementListTab({ setActiveTab }) {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await axiosInstance.get('/admin/projects');
+        const res = await getAdminProjectsAPI();
         const normalized = res.data.map(p => ({
           id: p._id,
           title: p.name,
@@ -44,7 +44,7 @@ export default function ProjectManagementListTab({ setActiveTab }) {
   const handleApprovalChange = async (id, val) => {
     try {
       const backendVal = val === 'Approve' ? 'Approved' : (val === 'Pending' ? 'Pending' : 'Rejected');
-      await axiosInstance.put(`/admin/projects/${id}/approval`, { approvalStatus: backendVal });
+      await approveAdminProjectAPI(id, { approvalStatus: backendVal });
       setProjects(projects.map(p => p.id === id ? { ...p, approvalStatus: val } : p));
       setApprovalDropdownId(null);
     } catch (err) {
@@ -54,7 +54,7 @@ export default function ProjectManagementListTab({ setActiveTab }) {
 
   const handleFeaturedChange = async (id, val) => {
     try {
-      await axiosInstance.put(`/admin/projects/${id}/toggle-featured`, { isFeatured: val === 'Yes' });
+      await toggleAdminProjectFeaturedAPI(id, { isFeatured: val === 'Yes' });
       setProjects(projects.map(p => p.id === id ? { ...p, featured: val } : p));
       setFeaturedDropdownId(null);
     } catch (err) {
@@ -64,7 +64,7 @@ export default function ProjectManagementListTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, val) => {
     try {
-      await axiosInstance.put(`/admin/projects/${id}/toggle-status`, { status: val });
+      await toggleAdminProjectStatusAPI(id, { status: val });
       setProjects(projects.map(p => p.id === id ? { ...p, status: val } : p));
       setStatusDropdownId(null);
     } catch (err) {
@@ -75,7 +75,7 @@ export default function ProjectManagementListTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this project?')) return;
     try {
-      await axiosInstance.delete(`/admin/projects/${id}`);
+      await deleteAdminProjectAPI(id);
       setProjects(projects.filter(p => p.id !== id));
     } catch (err) {
       alert('Failed to delete project');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Trash2, ChevronDown, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminFeaturedRequestsAPI, deleteAdminFeaturedRequestAPI, updateAdminFeaturedRequestAPI } from '../../api/api';
 
 export default function FeaturedPropertiesRequestsTab({ setActiveTab, filterType }) {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ export default function FeaturedPropertiesRequestsTab({ setActiveTab, filterType
     try {
       setLoading(true);
       const status = statusMap[filterType] || 'all';
-      const res = await axiosInstance.get(`/admin/featured/requests?status=${status}`);
+      const res = await getAdminFeaturedRequestsAPI({ status });
       setRequests(res.data);
     } catch (err) {
       console.error('Error fetching featured requests:', err);
@@ -61,7 +61,7 @@ export default function FeaturedPropertiesRequestsTab({ setActiveTab, filterType
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this feature request?')) return;
     try {
-      await axiosInstance.delete(`/admin/featured/requests/${id}`);
+      await deleteAdminFeaturedRequestAPI(id);
       setRequests(prev => prev.filter(r => r._id !== id));
     } catch (err) {
       alert('Failed to delete request');
@@ -70,7 +70,7 @@ export default function FeaturedPropertiesRequestsTab({ setActiveTab, filterType
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const res = await axiosInstance.put(`/admin/featured/requests/${id}`, {
+      const res = await updateAdminFeaturedRequestAPI(id, {
         featuredStatus: newStatus,
       });
       setRequests(prev => prev.map(r => r._id === id ? res.data : r));

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getVendorAgentsAPI, updateVendorProjectAPI } from '../../api/api';
 
 export function VendorProjectAddTab({ setActiveTab, onSave }) {
   // --- Dropdown data ---
@@ -38,7 +38,7 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
     const fetchAgents = async () => {
       try {
         setLoadingDropdowns(true);
-        const res = await axiosInstance.get('/vendor/agents');
+        const res = await getVendorAgentsAPI();
         setAgentsList(res.data);
       } catch (err) {
         console.error('Failed to load agents:', err);
@@ -455,7 +455,7 @@ export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddCl
 
   const handleStatusChange = async (id, newStatusValue) => {
     try {
-      await axiosInstance.put(`/vendor/projects/${id}`, { status: newStatusValue });
+      await updateVendorProjectAPI(id, { status: newStatusValue });
     } catch (err) {
       console.error('Failed to update project status:', err);
     }

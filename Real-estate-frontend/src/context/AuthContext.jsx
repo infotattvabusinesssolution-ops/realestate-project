@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axiosInstance from '../api/axiosInstance';
+import { loginAPI, registerAPI, getProfileAPI, updateProfileAPI, changePasswordAPI } from '../api/api';
 
 const AuthContext = createContext(null);
 
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       if (token) {
         try {
-          const res = await axiosInstance.get('/auth/profile');
+          const res = await getProfileAPI();
           setUser(res.data);
           setIsAuthenticated(true);
         } catch (error) {
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   // Login handler
   const login = async (email, password) => {
     try {
-      const res = await axiosInstance.post('/auth/login', { email, password });
+      const res = await loginAPI(email, password);
       const { token: userToken, ...userData } = res.data;
 
       localStorage.setItem('estaty_token', userToken);
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
   // Register handler
   const register = async (name, email, password, role, phone, city) => {
     try {
-      const res = await axiosInstance.post('/auth/register', {
+      const res = await registerAPI({
         name,
         email,
         password,
@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   // Update profile details
   const updateProfile = async (profileData) => {
     try {
-      const res = await axiosInstance.put('/auth/profile', profileData);
+      const res = await updateProfileAPI(profileData);
       const userData = res.data;
       setUser(userData);
       localStorage.setItem('estaty_user', JSON.stringify(userData));
@@ -104,10 +104,7 @@ export const AuthProvider = ({ children }) => {
   // Change password
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      await axiosInstance.put('/auth/change-password', {
-        currentPassword,
-        newPassword,
-      });
+      await changePasswordAPI(currentPassword, newPassword);
     } catch (error) {
       throw error.response?.data?.message || 'Password update failed';
     }

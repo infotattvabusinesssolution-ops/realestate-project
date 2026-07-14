@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminTicketSettingsAPI, updateAdminSettingsAPI } from '../../api/api';
 
 export default function VendorSettingsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function VendorSettingsTab({ setActiveTab }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axiosInstance.get('/admin/settings');
+        const res = await getAdminTicketSettingsAPI();
         setNeedsApproval(res.data.vendorNeedsApproval !== false);
         setEmailVerification(res.data.vendorEmailVerification !== false);
         setApprovalNotice(res.data.vendorApprovalNotice || '');
@@ -31,7 +31,7 @@ export default function VendorSettingsTab({ setActiveTab }) {
     e.preventDefault();
     setSaving(true);
     try {
-      await axiosInstance.put('/admin/settings', {
+      await updateAdminSettingsAPI({
         vendorNeedsApproval: needsApproval,
         vendorEmailVerification: emailVerification,
         vendorApprovalNotice: approvalNotice,

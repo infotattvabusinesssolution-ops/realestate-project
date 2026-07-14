@@ -119,7 +119,7 @@ io.on('connection', (socket) => {
   socket.on('send_inquiry_message', (data) => {
     const { message } = data; // message contains receiver, sender, text, property, etc.
     const receiverId = message.receiver.toString();
-    
+
     // Send message to the specific receiver room
     io.to(receiverId).emit('receive_inquiry_message', message);
     console.log(`Direct inquiry message forwarded to user room: ${receiverId}`);

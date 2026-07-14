@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Image as ImageIcon, Loader2, Upload, FileText, X } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminUsersAPI, createAdminProjectAPI } from '../../api/api';
 
 export default function ProjectManagementAddTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export default function ProjectManagementAddTab({ setActiveTab }) {
   useEffect(() => {
     const fetchVendors = async () => {
       try {
-        const res = await axiosInstance.get('/admin/users');
+        const res = await getAdminUsersAPI();
         const vendorList = (res.data || []).filter(u => u.role === 'vendor');
         setVendors(vendorList);
       } catch (err) {
@@ -132,7 +132,7 @@ export default function ProjectManagementAddTab({ setActiveTab }) {
     formData.append('features', JSON.stringify(activeFeatures));
 
     try {
-      await axiosInstance.post('/admin/projects', formData, {
+      await createAdminProjectAPI(formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

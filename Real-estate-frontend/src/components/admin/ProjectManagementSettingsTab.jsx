@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminProjectSettingsAPI, updateAdminProjectSettingsAPI } from '../../api/api';
 
 export default function ProjectManagementSettingsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function ProjectManagementSettingsTab({ setActiveTab }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axiosInstance.get('/admin/projects/settings');
+        const res = await getAdminProjectSettingsAPI();
         setNeedsApproval(res.data.needsProjectApproval);
       } catch (err) {
         console.error('Error fetching project settings:', err);
@@ -26,7 +26,7 @@ export default function ProjectManagementSettingsTab({ setActiveTab }) {
   const handleUpdate = async () => {
     setSaving(true);
     try {
-      await axiosInstance.put('/admin/projects/settings', { needsProjectApproval: needsApproval });
+      await updateAdminProjectSettingsAPI({ needsProjectApproval: needsApproval });
       alert('Project settings updated successfully!');
     } catch (err) {
       alert('Failed to update project settings');

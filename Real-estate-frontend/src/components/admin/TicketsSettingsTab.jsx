@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminTicketSettingsAPI, updateAdminSettingsAPI } from '../../api/api';
 
 export default function TicketsSettingsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function TicketsSettingsTab({ setActiveTab }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axiosInstance.get('/admin/settings');
+        const res = await getAdminTicketSettingsAPI();
         setIsActive(res.data.ticketsActive !== false);
       } catch (err) {
         console.error('Error fetching ticket settings:', err);
@@ -27,7 +27,7 @@ export default function TicketsSettingsTab({ setActiveTab }) {
     e.preventDefault();
     setSaving(true);
     try {
-      await axiosInstance.put('/admin/settings', {
+      await updateAdminSettingsAPI({
         ticketsActive: isActive
       });
       alert('Support ticket settings updated successfully!');

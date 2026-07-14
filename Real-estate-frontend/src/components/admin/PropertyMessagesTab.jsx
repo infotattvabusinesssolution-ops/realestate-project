@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Trash2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminMessagesAPI, deleteAdminMessageAPI } from '../../api/api';
 
 export default function PropertyMessagesTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function PropertyMessagesTab({ setActiveTab }) {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await axiosInstance.get('/admin/messages');
+        const res = await getAdminMessagesAPI();
         setMessages(res.data);
       } catch (err) {
         console.error('Error fetching messages:', err);
@@ -26,7 +26,7 @@ export default function PropertyMessagesTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this message?')) return;
     try {
-      await axiosInstance.delete(`/admin/messages/${id}`);
+      await deleteAdminMessageAPI(id);
       setMessages(prev => prev.filter(m => m._id !== id));
     } catch (err) {
       alert('Failed to delete message');

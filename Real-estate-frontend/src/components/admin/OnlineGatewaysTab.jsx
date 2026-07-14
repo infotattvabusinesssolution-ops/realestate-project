@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminOnlineGatewaysAPI, updateAdminOnlineGatewaysAPI } from '../../api/api';
 
 export default function OnlineGatewaysTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ export default function OnlineGatewaysTab({ setActiveTab }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axiosInstance.get('/admin/gateways/online');
+        const res = await getAdminOnlineGatewaysAPI();
         const data = res.data;
         setPaypalStatus(data.paypalStatus || 'Active');
         setPaypalTestMode(data.paypalTestMode || 'Active');
@@ -77,7 +77,7 @@ export default function OnlineGatewaysTab({ setActiveTab }) {
         paytmWebsite,
         paytmIndustry,
       };
-      await axiosInstance.put('/admin/gateways/online', payload);
+      await updateAdminOnlineGatewaysAPI(payload);
       alert(`${gateway} Gateway settings updated successfully!`);
     } catch (err) {
       alert(`Failed to update ${gateway} settings: ` + (err.response?.data?.message || err.message));

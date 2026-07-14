@@ -1,7 +1,7 @@
 import React from 'react';
 import { Eye, Trash2 } from 'lucide-react';
 
-export default function CustomerDashboardTab({ user = {}, wishlistItems = [], onRemoveWishlist, onViewProperty }) {
+export default function CustomerDashboardTab({ user = {}, wishlistItems = [], stats = {}, onRemoveWishlist, onViewProperty }) {
   
   const accountInfo = [
     { label: 'Name', value: user.name || 'Test User new' },
@@ -17,6 +17,39 @@ export default function CustomerDashboardTab({ user = {}, wishlistItems = [], on
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
+
+      {/* Stats Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400">Wishlist Properties</span>
+            <h4 className="text-2xl font-black text-slate-800 mt-1">{stats?.wishlistCount ?? wishlistItems.length}</h4>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-orange-50/50 flex items-center justify-center text-orange-500 font-extrabold text-sm">
+            ❤️
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400">Support Tickets</span>
+            <h4 className="text-2xl font-black text-slate-800 mt-1">{stats?.ticketsCount ?? 0}</h4>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-50/50 flex items-center justify-center text-blue-550 font-extrabold text-sm">
+            🎫
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400">Conversations</span>
+            <h4 className="text-2xl font-black text-slate-800 mt-1">{stats?.messagesCount ?? 0}</h4>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-green-50/50 flex items-center justify-center text-green-550 font-extrabold text-sm">
+            💬
+          </div>
+        </div>
+      </div>
       
       {/* 1. Account Information Box */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6">

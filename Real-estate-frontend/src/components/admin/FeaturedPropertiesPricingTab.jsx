@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminFeaturedPricingAPI, createAdminFeaturedPricingAPI, updateAdminFeaturedPricingAPI, deleteAdminFeaturedPricingAPI } from '../../api/api';
 
 export default function FeaturedPropertiesPricingTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function FeaturedPropertiesPricingTab({ setActiveTab }) {
   const fetchPricing = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/featured/pricing');
+      const res = await getAdminFeaturedPricingAPI();
       setPricing(res.data);
     } catch (err) {
       console.error('Error fetching pricing:', err);
@@ -51,14 +51,14 @@ export default function FeaturedPropertiesPricingTab({ setActiveTab }) {
     setSaving(true);
     try {
       if (editItem) {
-        const res = await axiosInstance.put(`/admin/featured/pricing/${editItem._id}`, {
+        const res = await updateAdminFeaturedPricingAPI(editItem._id, {
           days: Number(form.days),
           cost: form.cost,
           status: form.status,
         });
         setPricing(pricing.map(p => p._id === editItem._id ? res.data : p));
       } else {
-        const res = await axiosInstance.post('/admin/featured/pricing', {
+        const res = await createAdminFeaturedPricingAPI({
           days: Number(form.days),
           cost: form.cost,
           status: form.status,
@@ -76,7 +76,7 @@ export default function FeaturedPropertiesPricingTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this pricing tier?')) return;
     try {
-      await axiosInstance.delete(`/admin/featured/pricing/${id}`);
+      await deleteAdminFeaturedPricingAPI(id);
       setPricing(pricing.filter(p => p._id !== id));
     } catch (err) {
       alert('Failed to delete');
@@ -85,7 +85,7 @@ export default function FeaturedPropertiesPricingTab({ setActiveTab }) {
 
   const handleStatusToggle = async (id, newStatus) => {
     try {
-      const res = await axiosInstance.put(`/admin/featured/pricing/${id}`, { status: newStatus });
+      const res = await updateAdminFeaturedPricingAPI(id, { status: newStatus });
       setPricing(pricing.map(p => p._id === id ? res.data : p));
       setStatusDropdownId(null);
     } catch (err) {

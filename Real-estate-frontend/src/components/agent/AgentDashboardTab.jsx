@@ -1,18 +1,43 @@
-import React from 'react';
-import { Home, Building2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, Building2, MessageSquare, Calendar } from 'lucide-react';
 import { 
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend 
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
+import { getAgentStatsAPI, getAgentChartDataAPI } from '../../api/api';
 
-export default function AgentDashboardTab({ setActiveTab, propertiesCount = 0, projectsCount = 0, chartData = [] }) {
+export default function AgentDashboardTab({ setActiveTab }) {
   const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Stats Data matching properties (green) and projects (purple)
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [statsRes, chartRes] = await Promise.all([
+          getAgentStatsAPI(),
+          getAgentChartDataAPI(),
+        ]);
+        setStats(statsRes.data);
+        setChartData(chartRes.data);
+      } catch (err) {
+        console.error('Failed to load agent dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+  // Stats cards configuration
   const statsData = [
-    { id: 'properties-list', name: 'Properties', value: propertiesCount, icon: Home, bg: 'bg-[#22c55e]', shadow: 'shadow-[#22c55e]/10' },
-    { id: 'projects-list', name: 'Projects', value: projectsCount, icon: Building2, bg: 'bg-[#6366f1]', shadow: 'shadow-[#6366f1]/10' }
+    { id: 'properties-list', name: 'Properties', value: stats?.assignedProperties ?? 0, icon: Home, bg: 'bg-[#22c55e]', shadow: 'shadow-[#22c55e]/10' },
+    { id: 'projects-list', name: 'Projects', value: stats?.assignedProjects ?? 0, icon: Building2, bg: 'bg-[#6366f1]', shadow: 'shadow-[#6366f1]/10' },
+    { id: 'messages', name: 'Leads', value: stats?.newLeads ?? 0, icon: MessageSquare, bg: 'bg-amber-500', shadow: 'shadow-amber-500/10' },
+    { id: 'dashboard', name: 'Appointments', value: stats?.appointments ?? 0, icon: Calendar, bg: 'bg-rose-500', shadow: 'shadow-rose-500/10' }
   ];
 
   // Default fallback data if backend has no records
@@ -35,6 +60,23 @@ export default function AgentDashboardTab({ setActiveTab, propertiesCount = 0, p
     { month: 'Dec', 'Monthly Property Posts': 0, 'Monthly Projects Post': 0 }
   ];
 
+  if (loading) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-300">
+        <div className="h-8 w-64 bg-slate-200 rounded-lg animate-pulse"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-slate-200 rounded-xl animate-pulse"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="h-80 bg-slate-100 rounded-2xl animate-pulse"></div>
+          <div className="h-80 bg-slate-100 rounded-2xl animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       
@@ -45,8 +87,8 @@ export default function AgentDashboardTab({ setActiveTab, propertiesCount = 0, p
         </h1>
       </div>
 
-      {/* Grid of 2 Solid-Colored Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+      {/* Grid of 4 Solid-Colored Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsData.map((card) => {
           const Icon = card.icon;
           return (

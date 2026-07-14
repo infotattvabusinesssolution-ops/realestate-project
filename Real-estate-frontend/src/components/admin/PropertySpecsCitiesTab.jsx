@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getSpecsCitiesAPI, getSpecsCountriesAPI, getSpecsStatesAPI, createSpecsCityAPI, updateSpecsCityStatusAPI } from '../../api/api';
 
 export default function PropertySpecsCitiesTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export default function PropertySpecsCitiesTab({ setActiveTab }) {
   const fetchCities = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/specs/cities');
+      const res = await getSpecsCitiesAPI();
       const normalized = res.data.map(c => ({
         id: c._id,
         country: c.country ? c.country.name : 'Unknown',
@@ -45,9 +45,9 @@ export default function PropertySpecsCitiesTab({ setActiveTab }) {
 
   const fetchCountriesAndStates = async () => {
     try {
-      const countryRes = await axiosInstance.get('/specs/countries');
+      const countryRes = await getSpecsCountriesAPI();
       setCountries(countryRes.data);
-      const stateRes = await axiosInstance.get('/specs/states');
+      const stateRes = await getSpecsStatesAPI();
       setAllStates(stateRes.data);
     } catch (err) {
       console.error('Error fetching specs data:', err);
@@ -77,7 +77,7 @@ export default function PropertySpecsCitiesTab({ setActiveTab }) {
     }
 
     try {
-      const res = await axiosInstance.post('/specs/cities', {
+      const res = await createSpecsCityAPI({
         country: modalForm.country,
         state: modalForm.state,
         name: modalForm.name,
@@ -109,7 +109,7 @@ export default function PropertySpecsCitiesTab({ setActiveTab }) {
 
   const handleStatusToggle = async (id, val) => {
     try {
-      await axiosInstance.put(`/specs/cities/${id}/status`, { status: val });
+      await updateSpecsCityStatusAPI(id, { status: val });
       setCities(cities.map(c => c.id === id ? { ...c, status: val } : c));
       setStatusDropdownId(null);
     } catch (err) {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft, Image as ImageIcon, Globe } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { createAdminAnnouncementAPI } from '../../api/api';
 
 export default function AnnouncementPopupAddTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export default function AnnouncementPopupAddTab({ setActiveTab }) {
         serialNumber: parseInt(serialNumber, 10) || 0,
         image: imagePreview || undefined
       };
-      await axiosInstance.post('/admin/announcement-popups', payload);
+      await createAdminAnnouncementAPI(payload);
       alert('Announcement popup saved successfully!');
       setActiveTab('announcement-popups');
     } catch (err) {

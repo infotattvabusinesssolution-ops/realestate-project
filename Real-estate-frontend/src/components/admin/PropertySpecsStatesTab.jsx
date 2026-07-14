@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getSpecsStatesAPI, getSpecsCountriesAPI, createSpecsStateAPI } from '../../api/api';
 
 export default function PropertySpecsStatesTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function PropertySpecsStatesTab({ setActiveTab }) {
   const fetchStates = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/specs/states');
+      const res = await getSpecsStatesAPI();
       const normalized = res.data.map(s => ({
         id: s._id,
         country: s.country ? s.country.name : 'Unknown',
@@ -36,7 +36,7 @@ export default function PropertySpecsStatesTab({ setActiveTab }) {
 
   const fetchCountries = async () => {
     try {
-      const res = await axiosInstance.get('/specs/countries');
+      const res = await getSpecsCountriesAPI();
       setCountries(res.data);
     } catch (err) {
       console.error('Error fetching countries:', err);
@@ -61,7 +61,7 @@ export default function PropertySpecsStatesTab({ setActiveTab }) {
     }
 
     try {
-      const res = await axiosInstance.post('/specs/states', {
+      const res = await createSpecsStateAPI({
         country: modalForm.country,
         name: modalForm.name,
         status: modalForm.status,

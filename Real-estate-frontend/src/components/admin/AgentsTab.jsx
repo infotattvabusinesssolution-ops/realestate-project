@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Loader2 } from 'lucide-react';
 import AddAgentModal from '../modal/admin/AddAgentModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminUsersAPI, updateAdminUserAPI, createAdminUserAPI, deleteAdminUserAPI } from '../../api/api';
 
 export default function AgentsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function AgentsTab({ setActiveTab }) {
   const fetchAgents = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/users?role=agent');
+      const res = await getAdminUsersAPI({ role: 'agent' });
       setAgents(res.data || []);
     } catch (err) {
       console.error('Error fetching agents:', err);
@@ -39,7 +39,7 @@ export default function AgentsTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const res = await axiosInstance.put(`/admin/users/${id}`, { status: newStatus });
+      const res = await updateAdminUserAPI(id, { status: newStatus });
       setAgents(prev => prev.map(a => a._id === id ? res.data : a));
       setStatusDropdownId(null);
     } catch (err) {
@@ -57,7 +57,7 @@ export default function AgentsTab({ setActiveTab }) {
         avatar: newAgent.avatar,
         status: 'Active',
       };
-      const res = await axiosInstance.post('/admin/users', payload);
+      const res = await createAdminUserAPI(payload);
       setAgents(prev => [res.data, ...prev]);
       setIsModalOpen(false);
     } catch (err) {
@@ -68,7 +68,7 @@ export default function AgentsTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this agent?')) return;
     try {
-      await axiosInstance.delete(`/admin/users/${id}`);
+      await deleteAdminUserAPI(id);
       setAgents(prev => prev.filter(a => a._id !== id));
     } catch (err) {
       alert('Failed to delete agent');

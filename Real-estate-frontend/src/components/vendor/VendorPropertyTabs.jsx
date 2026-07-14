@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, Plus, ChevronDown, Trash2, Building2, Camera, Image } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { 
+  fetchCountriesAPI, 
+  fetchStatesAPI, 
+  fetchCitiesAPI, 
+  getCategoriesAPI, 
+  getAmenitiesAPI, 
+  getVendorAgentsAPI, 
+  uploadFileAPI 
+} from '../../api/api';
 
 export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
   const [selectedType, setSelectedType] = useState('none'); // 'none', 'commercial', 'residential'
@@ -14,6 +22,11 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
   const [amenitiesList, setAmenitiesList] = useState([]);
   const [agentsList, setAgentsList] = useState([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(true);
+
+  // Dependent location loading & error states
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [locationError, setLocationError] = useState('');
 
   // File upload refs & states
   const thumbnailInputRef = useRef(null);
@@ -65,27 +78,67 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
     { id: Date.now(), labelEn: '', valueEn: '', labelAr: '', valueAr: '' }
   ]);
 
-  // Fetch dropdown data from specs API (public endpoints)
+  const handleCountryChange = async (selectedCountryName) => {
+    setCountry(selectedCountryName);
+    setStateName('');
+    setCityName('');
+    setStates([]);
+    setCities([]);
+    setLocationError('');
+
+    if (!selectedCountryName) return;
+
+    try {
+      setLoadingStates(true);
+      const data = await fetchStatesAPI(selectedCountryName);
+      setStates(data || []);
+    } catch (err) {
+      setLocationError('Failed to load states for the selected country.');
+      console.error(err);
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  const handleStateChange = async (selectedStateName) => {
+    setStateName(selectedStateName);
+    setCityName('');
+    setCities([]);
+    setLocationError('');
+
+    if (!selectedStateName) return;
+
+    try {
+      setLoadingCities(true);
+      const data = await fetchCitiesAPI(country, selectedStateName);
+      setCities(data || []);
+    } catch (err) {
+      setLocationError('Failed to load cities for the selected state.');
+      console.error(err);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  // Fetch dropdown data from specs API (public endpoints) and countries list
   useEffect(() => {
     const fetchDropdowns = async () => {
       try {
         setLoadingDropdowns(true);
-        const [catRes, countryRes, stateRes, cityRes, amenityRes, agentRes] = await Promise.all([
-          axiosInstance.get('/specs/categories'),
-          axiosInstance.get('/specs/countries'),
-          axiosInstance.get('/specs/states'),
-          axiosInstance.get('/specs/cities'),
-          axiosInstance.get('/specs/amenities'),
-          axiosInstance.get('/vendor/agents'),
+        setLocationError('');
+        const [catRes, amenityRes, agentRes, countriesData] = await Promise.all([
+          getCategoriesAPI(),
+          getAmenitiesAPI(),
+          getVendorAgentsAPI(),
+          fetchCountriesAPI(),
         ]);
         setCategories(catRes.data);
-        setCountries(countryRes.data);
-        setStates(stateRes.data);
-        setCities(cityRes.data);
         setAmenitiesList(amenityRes.data);
         setAgentsList(agentRes.data);
+        setCountries(countriesData || []);
       } catch (err) {
         console.error('Failed to load dropdown data:', err);
+        setLocationError('Failed to load initial layout specification details.');
       } finally {
         setLoadingDropdowns(false);
       }
@@ -100,15 +153,8 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
     return true;
   });
 
-  // Filter states based on selected country
-  const filteredStates = states.filter(s =>
-    !country || (s.country && (s.country._id === country || s.country.name === country))
-  );
-
-  // Filter cities based on selected state
-  const filteredCities = cities.filter(c =>
-    !stateName || (c.state && (c.state._id === stateName || c.state.name === stateName))
-  );
+  const filteredStates = states;
+  const filteredCities = cities;
 
   // Compute real counts from properties prop
   const commercialCount = (properties || []).filter(p => p.propertyType === 'Commercial').length;
@@ -154,9 +200,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
       else if (type === 'floorPlan') setUploadingFloorPlan(true);
       else if (type === 'videoImage') setUploadingVideoImage(true);
 
-      const res = await axiosInstance.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await uploadFileAPI(formData);
 
       if (type === 'thumbnail') setThumbnailUrl(res.data.url);
       else if (type === 'floorPlan') setFloorPlanUrl(res.data.url);
@@ -183,9 +227,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
-        const res = await axiosInstance.post('/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const res = await uploadFileAPI(formData);
         urls.push(res.data.url);
       }
       setGalleryUrls([...galleryUrls, ...urls]);
@@ -243,10 +285,6 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
     // Find selected category name for the tag
     const selectedCat = categories.find(c => c._id === category);
-    // Find selected country/state/city names
-    const selectedCountry = countries.find(c => c._id === country);
-    const selectedState = states.find(s => s._id === stateName);
-    const selectedCity = cities.find(c => c._id === cityName);
 
     const payload = {
       name: title,
@@ -256,9 +294,9 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
       tag: selectedCat ? selectedCat.name : (selectedType === 'commercial' ? 'Commercial' : 'Villa'),
       address: address || '',
       description: description || '',
-      city: selectedCity ? selectedCity.name : '',
-      country: selectedCountry ? selectedCountry.name : '',
-      state: selectedState ? selectedState.name : '',
+      city: cityName || '',
+      country: country || '',
+      state: stateName || '',
       beds: beds || 0,
       baths: baths || 0,
       area: area || '',
@@ -280,7 +318,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
     if (agent) payload.assignedAgent = agent;
     if (category) payload.category = category;
     if (amenities.length > 0) payload.amenities = amenities;
-    
+
     // Features
     const validFeatures = features.filter(f => f.labelEn || f.valueEn);
     if (validFeatures.length > 0) {
@@ -322,10 +360,10 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
         {/* Outer Box */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-8">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Choose Property Type</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Commercial Card */}
-            <div 
+            <div
               onClick={() => setSelectedType('commercial')}
               className="border border-slate-100 rounded-3xl p-8 flex flex-col items-center justify-center space-y-4 hover:border-blue-500 hover:shadow-lg transition-all duration-300 cursor-pointer text-center group"
             >
@@ -339,7 +377,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
             </div>
 
             {/* Residential Card */}
-            <div 
+            <div
               onClick={() => setSelectedType('residential')}
               className="border border-slate-100 rounded-3xl p-8 flex flex-col items-center justify-center space-y-4 hover:border-blue-500 hover:shadow-lg transition-all duration-300 cursor-pointer text-center group"
             >
@@ -360,7 +398,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
   // STEP 2: MERGED SINGLE PAGE PROPERTY CREATION FORM
   return (
     <div className="space-y-6 animate-in fade-in duration-300 font-sans">
-      
+
       {/* Header Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
         <h2 className="text-lg font-bold text-slate-800">Add Property</h2>
@@ -376,11 +414,11 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8 pb-12">
-        
+
         {/* Main form fields box */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 space-y-6">
           <h3 className="text-xs font-bold text-slate-800 border-b border-slate-50 pb-3">Add Property</h3>
-          
+
           <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3 text-[10px] font-bold text-orange-600">
             You can upload maximum 99 gallery images under one property
           </div>
@@ -388,15 +426,15 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
           {/* Gallery Images Drop Box */}
           <div className="space-y-3">
             <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Gallery Images</label>
-            <input 
-              type="file" 
-              multiple 
-              ref={galleryInputRef} 
+            <input
+              type="file"
+              multiple
+              ref={galleryInputRef}
               onChange={handleUploadGallery}
               accept="image/*"
-              className="hidden" 
+              className="hidden"
             />
-            <div 
+            <div
               onClick={() => galleryInputRef.current.click()}
               className="border border-dashed border-slate-200 rounded-2xl py-10 flex flex-col items-center justify-center bg-slate-50/30 hover:bg-slate-50 hover:border-blue-400 transition cursor-pointer text-center"
             >
@@ -412,7 +450,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                 {galleryUrls.map((url, idx) => (
                   <div key={idx} className="relative w-20 h-20 group rounded-xl overflow-hidden border border-slate-150 shadow-sm shrink-0">
                     <img src={url} alt="Gallery" className="w-20 h-20 object-cover" />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => handleRemoveGalleryImage(idx)}
                       className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] font-black tracking-wide transition-opacity duration-205"
@@ -427,7 +465,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
           {/* Three Image Card Selectors */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
+
             {/* Thumbnail Image */}
             <div className="border border-slate-100 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4 bg-white text-center">
               <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Thumbnail Image*</label>
@@ -447,8 +485,8 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                 )}
               </div>
               <input type="file" ref={thumbnailInputRef} onChange={(e) => handleUploadFile(e, 'thumbnail')} accept="image/*" className="hidden" />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 disabled={uploadingThumbnail}
                 onClick={() => thumbnailInputRef.current.click()}
                 className="px-4 py-1.5 bg-[#16a34a] hover:bg-green-700 text-white rounded font-bold text-[10px] transition active:scale-95 disabled:opacity-50"
@@ -476,8 +514,8 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                 )}
               </div>
               <input type="file" ref={floorPlanInputRef} onChange={(e) => handleUploadFile(e, 'floorPlan')} accept="image/*" className="hidden" />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 disabled={uploadingFloorPlan}
                 onClick={() => floorPlanInputRef.current.click()}
                 className="px-4 py-1.5 bg-[#16a34a] hover:bg-green-700 text-white rounded font-bold text-[10px] transition active:scale-95 disabled:opacity-50"
@@ -505,8 +543,8 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                 )}
               </div>
               <input type="file" ref={videoImageInputRef} onChange={(e) => handleUploadFile(e, 'videoImage')} accept="image/*" className="hidden" />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 disabled={uploadingVideoImage}
                 onClick={() => videoImageInputRef.current.click()}
                 className="px-4 py-1.5 bg-[#16a34a] hover:bg-green-700 text-white rounded font-bold text-[10px] transition active:scale-95 disabled:opacity-50"
@@ -543,34 +581,60 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
               </select>
             </div>
 
+            {locationError && (
+              <div className="col-span-1 md:col-span-3 bg-red-50 border border-red-200 rounded-xl p-3 text-[10px] font-bold text-red-600">
+                {locationError}
+              </div>
+            )}
+
             <div className="flex flex-col space-y-1.5">
               <label>Country*</label>
-              <select value={country} onChange={(e) => setCountry(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+              <select value={country} onChange={(e) => handleCountryChange(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
                 <option value="">Select Country</option>
                 {countries.map(c => (
-                  <option key={c._id} value={c.name}>{c.name}</option>
+                  <option key={c.name} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>State*</label>
-              <select value={stateName} onChange={(e) => setStateName(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
-                <option value="">Select State</option>
+              <select 
+                value={stateName} 
+                onChange={(e) => handleStateChange(e.target.value)} 
+                disabled={!country || loadingStates}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full disabled:opacity-50"
+              >
+                <option value="">
+                  {loadingStates ? 'Loading States...' : 'Select State'}
+                </option>
                 {filteredStates.map(s => (
-                  <option key={s._id} value={s.name}>{s.name}</option>
+                  <option key={s.name} value={s.name}>{s.name}</option>
                 ))}
               </select>
+              {states.length === 0 && country && !loadingStates && (
+                <span className="text-[10px] text-slate-400 mt-0.5 font-medium">No states found</span>
+              )}
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>City*</label>
-              <select value={cityName} onChange={(e) => setCityName(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
-                <option value="">Select City</option>
+              <select 
+                value={cityName} 
+                onChange={(e) => setCityName(e.target.value)} 
+                disabled={!stateName || loadingCities}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full disabled:opacity-50"
+              >
+                <option value="">
+                  {loadingCities ? 'Loading Cities...' : 'Select City'}
+                </option>
                 {filteredCities.map(c => (
-                  <option key={c._id} value={c.name}>{c.name}</option>
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
+              {cities.length === 0 && stateName && !loadingCities && (
+                <span className="text-[10px] text-slate-400 mt-0.5 font-medium">No cities found</span>
+              )}
             </div>
 
             <div className="flex flex-col space-y-1.5">
@@ -637,11 +701,10 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                     key={amenity._id}
                     type="button"
                     onClick={() => handleAmenityToggle(amenity._id)}
-                    className={`px-3 py-2.5 border rounded-xl font-bold text-[10px] uppercase text-center transition active:scale-95 ${
-                      isSelected 
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                    className={`px-3 py-2.5 border rounded-xl font-bold text-[10px] uppercase text-center transition active:scale-95 ${isSelected
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                         : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     {amenity.name}
                   </button>
@@ -657,7 +720,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
           <div className="bg-indigo-650 text-white px-6 py-3 text-xs font-extrabold tracking-wide uppercase bg-indigo-600/90">
             English Language (Default)
           </div>
-          
+
           <div className="p-6 space-y-4 text-xs font-bold text-slate-700">
             <div className="flex flex-col space-y-1.5">
               <label>Title*</label>
@@ -671,7 +734,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
             <div className="flex flex-col space-y-1.5">
               <label>Description*</label>
-              <textarea 
+              <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
@@ -692,12 +755,12 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
             </div>
 
             <div className="flex items-center space-x-2 pt-2">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 id="arabicCheckbox"
                 checked={translateArabic}
                 onChange={(e) => setTranslateArabic(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-slate-200 rounded focus:ring-blue-500" 
+                className="w-4 h-4 text-blue-600 border-slate-200 rounded focus:ring-blue-500"
               />
               <label htmlFor="arabicCheckbox" className="font-bold text-xs text-slate-655 cursor-pointer select-none">
                 Translate in Arabic language
@@ -712,7 +775,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
             <div className="bg-indigo-650 text-white px-6 py-3 text-xs font-extrabold tracking-wide uppercase bg-indigo-600/90">
               Arabic Language
             </div>
-            
+
             <div className="p-6 space-y-4 text-xs font-bold text-slate-700">
               <div className="flex flex-col space-y-1.5">
                 <label>Title (Arabic)*</label>
@@ -735,7 +798,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
         {/* ADDITIONAL FEATURES SECTION */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6 space-y-6">
           <h3 className="text-xs font-bold text-slate-800 border-b border-slate-50 pb-3">Additional Features (Optional)</h3>
-          
+
           <div className="space-y-4">
             <div className="grid grid-cols-12 gap-4 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">
               <div className="col-span-5">Label</div>
@@ -780,15 +843,15 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
                 </div>
 
                 <div className="col-span-2 flex items-center justify-end space-x-1.5">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={addFeatureRow}
                     className="w-7 h-7 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center transition active:scale-90"
                   >
                     <Plus size={14} />
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => removeFeatureRow(row.id)}
                     className="w-7 h-7 bg-red-500 hover:bg-red-650 text-white rounded-lg flex items-center justify-center transition active:scale-90"
                   >
@@ -802,7 +865,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
         {/* Centered Save Button */}
         <div className="flex justify-center pt-6">
-          <button 
+          <button
             type="submit"
             disabled={submitting}
             className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs transition active:scale-95 shadow-md shadow-blue-500/10"
@@ -832,7 +895,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
     status: p.isActive !== false ? 'Active' : 'Inactive',
   }));
 
-  const filteredRows = rows.filter(row => 
+  const filteredRows = rows.filter(row =>
     row.title.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -847,7 +910,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
 
   const handleStatusChange = async (id, newActiveState) => {
     try {
-      await axiosInstance.put(`/vendor/properties/${id}`, { isActive: newActiveState === 'Active' });
+      await updateVendorPropertyAPI(id, { isActive: newActiveState === 'Active' });
     } catch (err) {
       console.error('Failed to update status:', err);
     }
@@ -855,7 +918,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
 
   const handleFeaturedChange = async (id, newFeaturedState) => {
     try {
-      await axiosInstance.put(`/vendor/properties/${id}`, { isFeatured: newFeaturedState === 'Yes' });
+      await updateVendorPropertyAPI(id, { isFeatured: newFeaturedState === 'Yes' });
     } catch (err) {
       console.error('Failed to update featured:', err);
     }
@@ -863,7 +926,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      
+
       {/* Header & Breadcrumbs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
         <h2 className="text-lg font-bold text-slate-800">Properties</h2>
@@ -878,12 +941,12 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
 
       {/* Main Table Box */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-premium p-6">
-        
+
         {/* Filters and Add button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center space-x-3 w-full sm:w-auto">
             <span className="text-xs font-bold text-slate-500">Properties</span>
-            
+
             {/* Search filter input */}
             <input
               type="text"
@@ -906,7 +969,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
 
           {/* Add Property Buttons */}
           <div className="flex items-center space-x-2 self-end sm:self-auto">
-            <button 
+            <button
               onClick={onAddClick}
               className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-md shadow-blue-500/10"
             >
@@ -955,12 +1018,11 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                   </td>
                   <td className="p-3">
                     <div className="flex items-center space-x-1">
-                      <select 
+                      <select
                         defaultValue={row.featured}
                         onChange={(e) => handleFeaturedChange(row.id, e.target.value)}
-                        className={`text-[10px] font-bold rounded-md px-1.5 py-1 text-white border-0 focus:outline-none ${
-                          row.featured === 'Yes' ? 'bg-emerald-500' : 'bg-red-500'
-                        }`}
+                        className={`text-[10px] font-bold rounded-md px-1.5 py-1 text-white border-0 focus:outline-none ${row.featured === 'Yes' ? 'bg-emerald-500' : 'bg-red-500'
+                          }`}
                       >
                         <option value="Yes">Yes</option>
                         <option value="No">No</option>
@@ -968,7 +1030,7 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                     </div>
                   </td>
                   <td className="p-3">
-                    <select 
+                    <select
                       defaultValue={row.status}
                       onChange={(e) => handleStatusChange(row.id, e.target.value)}
                       className="text-[10px] font-bold rounded-md px-1.5 py-1 bg-emerald-500 text-white border-0 focus:outline-none"
@@ -979,8 +1041,8 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
                   </td>
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end space-x-1.5">
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => onDelete(row.id)}
                         className="p-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"
                       >

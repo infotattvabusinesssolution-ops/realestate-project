@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminTicketSettingsAPI, updateAdminSettingsAPI } from '../../api/api';
 
 export default function PropertyManagementSettingsTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function PropertyManagementSettingsTab({ setActiveTab }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await axiosInstance.get('/admin/settings');
+        const res = await getAdminTicketSettingsAPI();
         setNeedsApproval(res.data.needsApproval);
       } catch (err) {
         console.error('Error fetching settings:', err);
@@ -26,7 +26,7 @@ export default function PropertyManagementSettingsTab({ setActiveTab }) {
   const handleUpdate = async () => {
     setSaving(true);
     try {
-      await axiosInstance.put('/admin/settings', { needsApproval });
+      await updateAdminSettingsAPI({ needsApproval });
       alert('Property settings updated successfully!');
     } catch (err) {
       alert('Failed to update settings');

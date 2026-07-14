@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, CornerUpLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import axiosInstance from '../../api/axiosInstance';
+import { getCustomerTicketDetailAPI, replyCustomerTicketAPI } from '../../api/api';
 import { io } from 'socket.io-client';
 
 export default function CustomerTicketDetailView({ ticket, onBack }) {
@@ -13,12 +13,14 @@ export default function CustomerTicketDetailView({ ticket, onBack }) {
   const [replies, setReplies] = useState([]);
   const [newReply, setNewReply] = useState('');
   const [socket, setSocket] = useState(null);
+  const [ticketDetails, setTicketDetails] = useState(null);
 
   // Fetch ticket conversation from backend on mount
   useEffect(() => {
     const fetchTicketDetails = async () => {
       try {
-        const res = await axiosInstance.get(`/customer/tickets/${ticketId}`);
+        const res = await getCustomerTicketDetailAPI(ticketId);
+        setTicketDetails(res.data);
         // Map backend responses to table structure
         const normalized = res.data.responses.map(r => ({
           id: r._id,
@@ -69,9 +71,7 @@ export default function CustomerTicketDetailView({ ticket, onBack }) {
     if (!newReply.trim()) return;
 
     try {
-      const res = await axiosInstance.post(`/customer/tickets/${ticketId}/reply`, {
-        text: newReply
-      });
+      const res = await replyCustomerTicketAPI(ticketId, newReply);
 
       // Get the added response from responses array
       const addedResponse = res.data.responses[res.data.responses.length - 1];
@@ -123,26 +123,26 @@ export default function CustomerTicketDetailView({ ticket, onBack }) {
       {/* Main Ticket Box */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-premium space-y-6">
         
-        {/* Ticket Header & Subject */}
+         {/* Ticket Header & Subject */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2.5">
             <span className={`px-2.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-              status === 'Open' ? 'bg-[#e6fcf5] text-[#0ca678]' :
-              status === 'Pending' ? 'bg-[#fff9db] text-[#f59f00]' : 'bg-[#fff5f5] text-[#f03e3e]'
+              (ticketDetails?.status || status) === 'Open' ? 'bg-[#e6fcf5] text-[#0ca678]' :
+              (ticketDetails?.status || status) === 'Pending' ? 'bg-[#fff9db] text-[#f59f00]' : 'bg-[#fff5f5] text-[#f03e3e]'
             }`}>
-              {status}
+              {ticketDetails?.status || status}
             </span>
             <span className="px-2.5 py-0.5 rounded bg-slate-900 text-white text-[9px] font-bold uppercase">
-              High
+              {ticketDetails?.urgency || ticket?.urgency || 'Medium'}
             </span>
           </div>
           
           <h3 className="text-sm font-extrabold text-slate-900 leading-tight">
-            {subject}
+            {ticketDetails?.title || subject}
           </h3>
           
           <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-            I am unable to log in to my account. It shows an error message. I tried resetting my password, but it didn't help. Please resolve this issue.
+            {ticketDetails?.responses?.[0]?.text || 'No description provided.'}
           </p>
 
           <button 
@@ -159,7 +159,7 @@ export default function CustomerTicketDetailView({ ticket, onBack }) {
           <h4 className="text-xs font-bold text-slate-800 tracking-wide uppercase">Replies</h4>
           
           <div className="space-y-6">
-            {replies.map((r) => (
+            {replies.slice(1).map((r) => (
               <div key={r.id} className="flex space-x-4">
                 
                 {/* Sender Avatar */}

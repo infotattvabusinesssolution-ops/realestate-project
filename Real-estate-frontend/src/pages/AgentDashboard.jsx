@@ -12,7 +12,18 @@ import AgentPropertyMessagesTab from '../components/agent/AgentPropertyMessagesT
 import AgentEditProfileTab from '../components/agent/AgentEditProfileTab';
 import AgentChangePasswordTab from '../components/agent/AgentChangePasswordTab';
 import { useAuth } from '../context/AuthContext';
-import axiosInstance from '../api/axiosInstance';
+import { 
+  getAgentStatsAPI, 
+  getAgentChartDataAPI, 
+  getAgentPropertiesAPI, 
+  createAgentPropertyAPI, 
+  updateAgentPropertyAPI, 
+  deleteAgentPropertyAPI, 
+  getAgentProjectsAPI, 
+  createAgentProjectAPI, 
+  updateAgentProjectAPI, 
+  deleteAgentProjectAPI 
+} from '../api/api';
 
 export default function AgentDashboard() {
   const navigate = useNavigate();
@@ -53,7 +64,6 @@ export default function AgentDashboard() {
 
   // Dynamic lists
   const [propertiesList, setPropertiesList] = useState([]);
-  const [projectsList, setProjectsList] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   const handleTabClick = (tabId) => {
@@ -75,12 +85,7 @@ export default function AgentDashboard() {
     if (!token) return;
     try {
       setDataLoading(true);
-      const [resProps, resProjs, resStats, resChart] = await Promise.all([
-        axiosInstance.get('/agent/properties'),
-        axiosInstance.get('/agent/projects'),
-        axiosInstance.get('/agent/stats'),
-        axiosInstance.get('/agent/chart-data'),
-      ]);
+      const resProps = await getAgentPropertiesAPI();
 
       const normalizedProps = resProps.data.map(p => ({
         ...p,
@@ -88,9 +93,6 @@ export default function AgentDashboard() {
         status: p.status === 'Approved' ? 'Active' : p.status
       }));
       setPropertiesList(normalizedProps);
-      setProjectsList(resProjs.data.map(p => ({ ...p, id: p._id })));
-      setStats(resStats.data);
-      setChartData(resChart.data);
       setDataLoading(false);
     } catch (err) {
       console.error('Error fetching agent data:', err);
@@ -110,7 +112,7 @@ export default function AgentDashboard() {
 
   const handleAddProperty = async (prop) => {
     try {
-      const res = await axiosInstance.post('/agent/properties', prop);
+      const res = await createAgentPropertyAPI(prop);
       const newProp = {
         ...res.data,
         id: res.data._id,
@@ -125,7 +127,7 @@ export default function AgentDashboard() {
 
   const handleDeleteProperty = async (id) => {
     try {
-      await axiosInstance.delete(`/agent/properties/${id}`);
+      await deleteAgentPropertyAPI(id);
       setPropertiesList(propertiesList.filter(p => p.id !== id));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete property');
@@ -134,44 +136,13 @@ export default function AgentDashboard() {
 
   const handleUpdateProperty = async (id, updatedFields) => {
     try {
-      const res = await axiosInstance.put(`/agent/properties/${id}`, updatedFields);
+      const res = await updateAgentPropertyAPI(id, updatedFields);
       setPropertiesList(propertiesList.map(p => p.id === id ? { ...p, ...res.data, id: res.data._id } : p));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update property');
     }
   };
 
-  const handleAddProject = async (proj) => {
-    try {
-      const res = await axiosInstance.post('/agent/projects', proj);
-      const newProj = {
-        ...res.data,
-        id: res.data._id
-      };
-      setProjectsList([...projectsList, newProj]);
-      setActiveTab('projects-list');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add project');
-    }
-  };
-
-  const handleDeleteProject = async (id) => {
-    try {
-      await axiosInstance.delete(`/agent/projects/${id}`);
-      setProjectsList(projectsList.filter(p => p.id !== id));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete project');
-    }
-  };
-
-  const handleUpdateProject = async (id, updatedFields) => {
-    try {
-      const res = await axiosInstance.put(`/agent/projects/${id}`, updatedFields);
-      setProjectsList(projectsList.map(p => p.id === id ? { ...p, ...res.data, id: res.data._id } : p));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update project');
-    }
-  };
 
   // Agent Menus Configuration
   const sidebarMenus = [
@@ -478,9 +449,6 @@ export default function AgentDashboard() {
           {activeTab === 'dashboard' && (
             <AgentDashboardTab
               setActiveTab={handleTabClick}
-              propertiesCount={stats.assignedProperties}
-              projectsCount={stats.assignedProjects}
-              chartData={chartData}
             />
           )}
 
@@ -505,14 +473,12 @@ export default function AgentDashboard() {
 
           {/* PROJECT MANAGEMENT TABS */}
           {activeTab === 'projects-add' && (
-            <AgentProjectAddTab setActiveTab={setActiveTab} onSave={handleAddProject} />
+            <AgentProjectAddTab setActiveTab={setActiveTab} />
           )}
+
           {activeTab === 'projects-list' && (
-            <AgentProjectListTab
-              setActiveTab={setActiveTab}
-              projects={projectsList}
-              onDelete={handleDeleteProject}
-              onUpdate={handleUpdateProject}
+            <AgentProjectListTab 
+              setActiveTab={handleTabClick} 
               onAddClick={() => setActiveTab('projects-add')}
             />
           )}

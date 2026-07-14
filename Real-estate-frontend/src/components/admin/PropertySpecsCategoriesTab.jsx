@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Search } from 'lucide-react';
 
-import axiosInstance from '../../api/axiosInstance';
+import { getCategoriesAPI, createSpecsCategoryAPI, updateSpecsCategoryStatusAPI } from '../../api/api';
 
 export default function PropertySpecsCategoriesTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export default function PropertySpecsCategoriesTab({ setActiveTab }) {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/specs/categories');
+      const res = await getCategoriesAPI();
       const normalized = res.data.map(c => ({
         id: c._id,
         type: c.type,
@@ -66,7 +66,7 @@ export default function PropertySpecsCategoriesTab({ setActiveTab }) {
     }
 
     try {
-      const res = await axiosInstance.post('/specs/categories', {
+      const res = await createSpecsCategoryAPI({
         type: modalForm.type,
         name: modalForm.name,
         nameAr: modalForm.nameAr,
@@ -102,7 +102,7 @@ export default function PropertySpecsCategoriesTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await axiosInstance.put(`/specs/categories/${id}/status`, { status: newStatus });
+      await updateSpecsCategoryStatusAPI(id, { status: newStatus });
       setCategories(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
     } catch (err) {
       alert('Failed to change category status');

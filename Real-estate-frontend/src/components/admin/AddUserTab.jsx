@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Image as ImageIcon, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { createAdminUserAPI } from '../../api/api';
 
 export default function AddUserTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ export default function AddUserTab({ setActiveTab }) {
         avatar: avatar || undefined,
         status: 'Active',
       };
-      await axiosInstance.post('/admin/users', payload);
+      await createAdminUserAPI(payload);
       alert('User added successfully!');
       setActiveTab('users-registered');
     } catch (err) {

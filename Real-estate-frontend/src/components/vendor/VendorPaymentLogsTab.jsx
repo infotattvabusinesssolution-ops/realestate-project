@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Home, X, CheckCircle, HelpCircle, XCircle } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getVendorPaymentLogsAPI } from '../../api/api';
 
 export function VendorPaymentLogsTab() {
   const [search, setSearch] = useState('');
@@ -11,7 +11,7 @@ export function VendorPaymentLogsTab() {
   const fetchPaymentLogs = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/vendor/payment-logs');
+      const res = await getVendorPaymentLogsAPI();
       setLogs(res.data);
     } catch (err) {
       console.error('Failed to load payment logs:', err);

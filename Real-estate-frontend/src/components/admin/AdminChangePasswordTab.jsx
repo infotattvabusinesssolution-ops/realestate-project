@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { changePasswordAPI } from '../../api/api';
 
 export default function AdminChangePasswordTab({ setActiveTab }) {
   const navigate = useNavigate();
-  const { changePassword } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -26,7 +25,7 @@ export default function AdminChangePasswordTab({ setActiveTab }) {
 
     try {
       setSaving(true);
-      await changePassword(currentPassword, newPassword);
+      await changePasswordAPI(currentPassword, newPassword);
       alert('Password changed successfully! Please log in again.');
       // Direct redirect back or logout session
       setActiveTab('dashboard');

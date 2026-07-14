@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Edit } from 'lucide-react';
 import AddRoleModal from '../modal/admin/AddRoleModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminRolesAPI, deleteAdminRoleAPI, createAdminRoleAPI } from '../../api/api';
 
 export default function AdminRolesTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function AdminRolesTab({ setActiveTab }) {
   const fetchRoles = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/roles');
+      const res = await getAdminRolesAPI();
       setRoles(res.data);
       setLoading(false);
     } catch (err) {
@@ -47,7 +47,7 @@ export default function AdminRolesTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this role?')) return;
     try {
-      await axiosInstance.delete(`/admin/roles/${id}`);
+      await deleteAdminRoleAPI(id);
       setRoles(roles.filter(r => r._id !== id));
       setSelectedIds(selectedIds.filter(x => x !== id));
       alert('Role deleted successfully');
@@ -58,7 +58,7 @@ export default function AdminRolesTab({ setActiveTab }) {
 
   const handleAddRole = async (newRole) => {
     try {
-      const res = await axiosInstance.post('/admin/roles', { name: newRole.name });
+      const res = await createAdminRoleAPI({ name: newRole.name });
       setRoles([res.data, ...roles]);
       setIsModalOpen(false);
       alert('Role added successfully!');

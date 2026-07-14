@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, Plus, ChevronDown, Trash2, Building2, Camera, Image, FileImage } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { 
+  getCategoriesAPI, 
+  getAmenitiesAPI, 
+  fetchCountriesAPI, 
+  fetchStatesAPI, 
+  fetchCitiesAPI,
+  uploadFileAPI 
+} from '../../api/api';
 
 export function AgentPropertyAddTab({ setActiveTab, onSave }) {
   const [selectedType, setSelectedType] = useState('none'); // 'none', 'commercial', 'residential'
@@ -9,6 +16,7 @@ export function AgentPropertyAddTab({ setActiveTab, onSave }) {
   const [categoriesList, setCategoriesList] = useState([]);
   const [amenitiesList, setAmenitiesList] = useState([]);
   const [countriesList, setCountriesList] = useState([]);
+  const [statesList, setStatesList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
 
   // File upload refs & states
@@ -60,26 +68,82 @@ export function AgentPropertyAddTab({ setActiveTab, onSave }) {
     { id: Date.now(), labelEn: 'Label (English)', valueEn: 'Value (English)', labelAr: 'Label (Arabic)', valueAr: 'Value (Arabic)' }
   ]);
 
+  const [countriesLoading, setCountriesLoading] = useState(false);
+  const [statesLoading, setStatesLoading] = useState(false);
+  const [citiesLoading, setCitiesLoading] = useState(false);
+
   // Load specifications on mount
   useEffect(() => {
     const fetchSpecs = async () => {
       try {
-        const [resCats, resAmens, resCountries, resCities] = await Promise.all([
-          axiosInstance.get('/spec/categories'),
-          axiosInstance.get('/spec/amenities'),
-          axiosInstance.get('/spec/countries'),
-          axiosInstance.get('/spec/cities')
+        setCountriesLoading(true);
+        const [resCats, resAmens, dataCountries] = await Promise.all([
+          getCategoriesAPI(),
+          getAmenitiesAPI(),
+          fetchCountriesAPI()
         ]);
         setCategoriesList(resCats.data);
         setAmenitiesList(resAmens.data);
-        setCountriesList(resCountries.data);
-        setCitiesList(resCities.data);
+        setCountriesList(dataCountries);
       } catch (err) {
         console.error('Failed to load specs in agent property form:', err);
+      } finally {
+        setCountriesLoading(false);
       }
     };
     fetchSpecs();
   }, []);
+
+  // Fetch states when country changes
+  useEffect(() => {
+    const loadStates = async () => {
+      if (!country) {
+        setStatesList([]);
+        return;
+      }
+      try {
+        setStatesLoading(true);
+        const data = await fetchStatesAPI(country);
+        setStatesList(data);
+      } catch (err) {
+        console.error('Failed to load states:', err);
+      } finally {
+        setStatesLoading(false);
+      }
+    };
+    loadStates();
+  }, [country]);
+
+  // Fetch cities when stateName changes
+  useEffect(() => {
+    const loadCities = async () => {
+      if (!country || !stateName) {
+        setCitiesList([]);
+        return;
+      }
+      try {
+        setCitiesLoading(true);
+        const data = await fetchCitiesAPI(country, stateName);
+        setCitiesList(data.map(c => ({ name: c }))); // wrap to match [{ name }] format
+      } catch (err) {
+        console.error('Failed to load cities:', err);
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+    loadCities();
+  }, [country, stateName]);
+
+  const handleCountryChange = (val) => {
+    setCountry(val);
+    setStateName('');
+    setCityName('');
+  };
+
+  const handleStateChange = (val) => {
+    setStateName(val);
+    setCityName('');
+  };
 
   const addFeatureRow = () => {
     if (features.length >= 20) return;
@@ -121,9 +185,7 @@ export function AgentPropertyAddTab({ setActiveTab, onSave }) {
       else if (type === 'floorPlan') setUploadingFloorPlan(true);
       else if (type === 'videoImage') setUploadingVideoImage(true);
 
-      const res = await axiosInstance.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await uploadFileAPI(formData);
 
       if (type === 'thumbnail') setThumbnailUrl(res.data.url);
       else if (type === 'floorPlan') setFloorPlanUrl(res.data.url);
@@ -150,9 +212,7 @@ export function AgentPropertyAddTab({ setActiveTab, onSave }) {
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
-        const res = await axiosInstance.post('/upload', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const res = await uploadFileAPI(formData);
         urls.push(res.data.url);
       }
       setGalleryUrls([...galleryUrls, ...urls]);
@@ -482,27 +542,38 @@ export function AgentPropertyAddTab({ setActiveTab, onSave }) {
               </select>
             </div>
 
-            <div className="flex flex-col space-y-1.5">
+             <div className="flex flex-col space-y-1.5">
               <label>Country*</label>
-              <select value={country} onChange={(e) => setCountry(e.target.value)} required className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
-                <option value="">Select Country</option>
-                {countriesList.map(c => (
-                  <option key={c._id} value={c.name}>{c.name}</option>
+              <select value={country} onChange={(e) => handleCountryChange(e.target.value)} required className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
+                <option value="">{countriesLoading ? 'Loading countries...' : 'Select Country'}</option>
+                {countriesList.map((c, idx) => (
+                  <option key={idx} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>State*</label>
-              <input type="text" required value={stateName} onChange={(e) => setStateName(e.target.value)} placeholder="Enter State" className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none" />
+              <select 
+                value={stateName} 
+                onChange={(e) => handleStateChange(e.target.value)} 
+                required 
+                disabled={!country || statesLoading}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full disabled:opacity-50"
+              >
+                <option value="">{statesLoading ? 'Loading states...' : 'Select State'}</option>
+                {statesList.map((s, idx) => (
+                  <option key={idx} value={s.name}>{s.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
               <label>City*</label>
-              <select value={cityName} onChange={(e) => setCityName(e.target.value)} required className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full">
-                <option value="">Select City</option>
-                {citiesList.map(c => (
-                  <option key={c._id} value={c.name}>{c.name}</option>
+              <select value={cityName} onChange={(e) => setCityName(e.target.value)} required disabled={!stateName || citiesLoading} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none w-full disabled:opacity-50">
+                <option value="">{citiesLoading ? 'Loading cities...' : 'Select City'}</option>
+                {citiesList.map((c, idx) => (
+                  <option key={idx} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Home, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminSubscribersAPI, deleteAdminSubscriberAPI } from '../../api/api';
 
 const PAGE_SIZE = 10;
 
@@ -14,7 +14,7 @@ export default function SubscribersTab({ setActiveTab }) {
   const fetchSubscribers = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/subscribers');
+      const res = await getAdminSubscribersAPI();
       setSubscribers(res.data || []);
     } catch (err) {
       console.error('Error fetching subscribers:', err);
@@ -37,7 +37,7 @@ export default function SubscribersTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this subscriber?')) return;
     try {
-      await axiosInstance.delete(`/admin/subscribers/${id}`);
+      await deleteAdminSubscriberAPI(id);
       setSubscribers(prev => prev.filter(s => s._id !== id));
       if (paginatedSubscribers.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);

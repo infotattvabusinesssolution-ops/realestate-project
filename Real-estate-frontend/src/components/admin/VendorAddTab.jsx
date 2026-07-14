@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Image as ImageIcon, Loader2 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { createAdminUserAPI } from '../../api/api';
 
 export default function VendorAddTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ export default function VendorAddTab({ setActiveTab }) {
         specialization: details || 'General',
         status: 'Active',
       };
-      await axiosInstance.post('/admin/users', payload);
+      await createAdminUserAPI(payload);
       alert('Vendor added successfully!');
       setActiveTab('vendor-list');
     } catch (err) {

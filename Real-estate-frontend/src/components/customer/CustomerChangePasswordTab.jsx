@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { changePasswordAPI } from '../../api/api';
 
 export default function CustomerChangePasswordTab() {
-  const { changePassword } = useAuth();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -15,7 +14,7 @@ export default function CustomerChangePasswordTab() {
     }
     
     try {
-      await changePassword(current, newPass);
+      await changePasswordAPI(current, newPass);
       alert('Password updated successfully!');
       setCurrent('');
       setNewPass('');

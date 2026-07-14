@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddVendorAgentModal from '../modal/vendor/AddVendorAgentModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getVendorAgentsAPI, createVendorAgentAPI, updateVendorAgentAPI, deleteVendorAgentAPI } from '../../api/api';
 
 export function VendorAgentsTab() {
   const [search, setSearch] = useState('');
@@ -13,7 +13,7 @@ export function VendorAgentsTab() {
   const fetchAgents = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/vendor/agents');
+      const res = await getVendorAgentsAPI();
       const normalized = res.data.map(a => ({
         id: a._id,
         username: a.username || a.name,
@@ -35,7 +35,7 @@ export function VendorAgentsTab() {
 
   const handleSaveAgent = async (agentData) => {
     try {
-      const res = await axiosInstance.post('/vendor/agents', {
+      const res = await createVendorAgentAPI({
         username: agentData.username,
         email: agentData.email,
         password: agentData.password || 'Agent@123',
@@ -57,7 +57,7 @@ export function VendorAgentsTab() {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await axiosInstance.put(`/vendor/agents/${id}`, { status: newStatus });
+      await updateVendorAgentAPI(id, { status: newStatus });
       setAgents(agents.map(a => a.id === id ? { ...a, status: newStatus } : a));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update agent status');
@@ -67,7 +67,7 @@ export function VendorAgentsTab() {
   const handleDeleteAgent = async (id) => {
     if (!confirm('Are you sure you want to remove this agent?')) return;
     try {
-      await axiosInstance.delete(`/vendor/agents/${id}`);
+      await deleteVendorAgentAPI(id);
       setAgents(agents.filter(a => a.id !== id));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete agent');

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Loader2 } from 'lucide-react';
 import AddPackageModal from '../modal/admin/AddPackageModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminPackagesAPI, updateAdminPackageAPI, createAdminPackageAPI, deleteAdminPackageAPI } from '../../api/api';
 
 export default function PackageManagementListTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function PackageManagementListTab({ setActiveTab }) {
   const fetchPackages = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/packages');
+      const res = await getAdminPackagesAPI();
       setPackages(res.data || []);
     } catch (err) {
       console.error('Error fetching packages:', err);
@@ -35,7 +35,7 @@ export default function PackageManagementListTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const res = await axiosInstance.put(`/admin/packages/${id}`, { status: newStatus });
+      const res = await updateAdminPackageAPI(id, { status: newStatus });
       setPackages(prev => prev.map(p => p._id === id ? res.data : p));
       setStatusDropdownId(null);
     } catch (err) {
@@ -45,7 +45,7 @@ export default function PackageManagementListTab({ setActiveTab }) {
 
   const handleAddPackage = async (newPkg) => {
     try {
-      const res = await axiosInstance.post('/admin/packages', newPkg);
+      const res = await createAdminPackageAPI(newPkg);
       setPackages(prev => [res.data, ...prev]);
       setIsModalOpen(false);
     } catch (err) {
@@ -56,7 +56,7 @@ export default function PackageManagementListTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this package?')) return;
     try {
-      await axiosInstance.delete(`/admin/packages/${id}`);
+      await deleteAdminPackageAPI(id);
       setPackages(prev => prev.filter(p => p._id !== id));
     } catch (err) {
       alert('Failed to delete package');

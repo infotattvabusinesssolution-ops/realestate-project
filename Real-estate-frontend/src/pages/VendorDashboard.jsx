@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   Users, Building2, HardHat, FileText, DollarSign, Award, CreditCard,
   ChevronDown, ChevronRight, Moon, Sun, Bell, LogOut, Key, UserCheck, Play,
@@ -19,8 +20,15 @@ import { VendorPaymentLogsTab } from '../components/vendor/VendorPaymentLogsTab'
 import { VendorEditProfileTab } from '../components/vendor/VendorEditProfileTab';
 import { VendorChangePasswordTab } from '../components/vendor/VendorChangePasswordTab';
 import VendorPropertyMessagesTab from '../components/vendor/VendorPropertyMessagesTab';
-import { useAuth } from '../context/AuthContext';
-import axiosInstance from '../api/axiosInstance';
+import { 
+  getVendorPropertiesAPI, 
+  getVendorProjectsAPI, 
+  verifyVendorCheckoutSessionAPI, 
+  createVendorPropertyAPI, 
+  deleteVendorPropertyAPI, 
+  createVendorProjectAPI, 
+  deleteVendorProjectAPI 
+} from '../api/api';
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
@@ -74,7 +82,7 @@ export default function VendorDashboard() {
     if (!token) return;
     try {
       setDataLoading(true);
-      const resProps = await axiosInstance.get('/vendor/properties');
+      const resProps = await getVendorPropertiesAPI();
       const normalizedProps = resProps.data.map(p => ({
         ...p,
         id: p._id,
@@ -83,7 +91,7 @@ export default function VendorDashboard() {
       }));
       setPropertiesList(normalizedProps);
 
-      const resProj = await axiosInstance.get('/vendor/projects');
+      const resProj = await getVendorProjectsAPI();
       const normalizedProj = resProj.data.map(p => ({
         ...p,
         id: p._id
@@ -110,7 +118,7 @@ export default function VendorDashboard() {
 
       if (isSuccess && sessionId && packageId) {
         try {
-          await axiosInstance.post('/vendor/verify-checkout-session', {
+          await verifyVendorCheckoutSessionAPI({
             sessionId,
             packageId,
           });
@@ -129,7 +137,7 @@ export default function VendorDashboard() {
 
   const handleAddProperty = async (prop) => {
     try {
-      const res = await axiosInstance.post('/vendor/properties', prop);
+      const res = await createVendorPropertyAPI(prop);
       const newProp = {
         ...res.data,
         id: res.data._id,
@@ -145,7 +153,7 @@ export default function VendorDashboard() {
 
   const handleDeleteProperty = async (id) => {
     try {
-      await axiosInstance.delete(`/vendor/properties/${id}`);
+      await deleteVendorPropertyAPI(id);
       setPropertiesList(propertiesList.filter(p => p.id !== id));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete property');
@@ -154,7 +162,7 @@ export default function VendorDashboard() {
 
   const handleAddProject = async (proj) => {
     try {
-      const res = await axiosInstance.post('/vendor/projects', proj);
+      const res = await createVendorProjectAPI(proj);
       const newProj = {
         ...res.data,
         id: res.data._id
@@ -168,7 +176,7 @@ export default function VendorDashboard() {
 
   const handleDeleteProject = async (id) => {
     try {
-      await axiosInstance.delete(`/vendor/projects/${id}`);
+      await deleteVendorProjectAPI(id);
       setProjectsList(projectsList.filter(p => p.id !== id));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete project');

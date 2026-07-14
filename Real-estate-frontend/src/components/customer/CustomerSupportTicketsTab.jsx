@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Mail, CornerUpLeft } from 'lucide-react';
+import { getCustomerTicketsAPI } from '../../api/api';
 
 // 1. Tickets List Tab
 export function CustomerSupportTicketsTab({ onViewTicket, onCreateClick }) {
-  const [tickets, setTickets] = useState([
-    { id: 40, subject: 'Unable to log in to account', status: 'Open', urgency: 'Medium', date: 'Jul 9, 2026' },
-    { id: 41, subject: 'Payment completed but order not showing', status: 'Open', urgency: 'High', date: 'Jul 8, 2026' },
-    { id: 42, subject: 'Need help updating profile information', status: 'Pending', urgency: 'Low', date: 'Jul 7, 2026' },
-    { id: 43, subject: 'App notifications not working', status: 'Closed', urgency: 'Medium', date: 'Jul 6, 2026' },
-    { id: 44, subject: 'Feature request - Dark mode', status: 'Open', urgency: 'Low', date: 'Jul 5, 2026' }
-  ]);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const res = await getCustomerTicketsAPI();
+        const normalized = res.data.map(t => ({
+          ...t,
+          id: t._id,
+          subject: t.title,
+          date: t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }) : 'N/A'
+        }));
+        setTickets(normalized);
+      } catch (err) {
+        console.error('Failed to fetch support tickets:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, []);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -63,31 +84,42 @@ export function CustomerSupportTicketsTab({ onViewTicket, onCreateClick }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {tickets.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50/50 transition bg-white">
-                  <td className="p-3 text-slate-800 font-bold">{t.id}</td>
-                  <td className="p-3 text-slate-700 font-medium">{t.subject}</td>
-                  <td className="p-3">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-md text-[9px] font-bold uppercase ${
-                      t.status === 'Open' ? 'bg-[#e6fcf5] text-[#0ca678]' :
-                      t.status === 'Pending' ? 'bg-[#fff9db] text-[#f59f00]' : 'bg-[#fff5f5] text-[#f03e3e]'
-                    }`}>
-                      {t.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">
-                    <button 
-                      type="button" 
-                      onClick={() => onViewTicket && onViewTicket(t)}
-                      className="p-2 border border-orange-500 text-orange-500 hover:bg-orange-50 rounded-lg flex items-center justify-center mx-auto transition active:scale-95 shadow-xs"
-                      title="View messages"
-                    >
-                      <Mail size={14} />
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className="p-8 text-center bg-white">
+                    <div className="flex items-center justify-center space-x-2 text-slate-500">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500"></div>
+                      <span>Loading support tickets...</span>
+                    </div>
                   </td>
                 </tr>
-              ))}
-              {tickets.length === 0 && (
+              ) : (
+                tickets.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50/50 transition bg-white">
+                    <td className="p-3 text-slate-800 font-bold">{t.id}</td>
+                    <td className="p-3 text-slate-700 font-medium">{t.subject}</td>
+                    <td className="p-3">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-md text-[9px] font-bold uppercase ${
+                        t.status === 'Open' ? 'bg-[#e6fcf5] text-[#0ca678]' :
+                        t.status === 'Pending' ? 'bg-[#fff9db] text-[#f59f00]' : 'bg-[#fff5f5] text-[#f03e3e]'
+                      }`}>
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button 
+                        type="button" 
+                        onClick={() => onViewTicket && onViewTicket(t)}
+                        className="p-2 border border-orange-500 text-orange-500 hover:bg-orange-50 rounded-lg flex items-center justify-center mx-auto transition active:scale-95 shadow-xs"
+                        title="View messages"
+                      >
+                        <Mail size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && tickets.length === 0 && (
                 <tr>
                   <td colSpan="4" className="p-4 text-center text-slate-400">No support tickets found.</td>
                 </tr>

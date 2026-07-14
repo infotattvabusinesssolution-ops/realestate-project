@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, ChevronDown, Mail, Phone, Trash2, MessageCircle, X, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import axiosInstance from '../../api/axiosInstance';
+import { getVendorLeadsAPI, deleteVendorLeadAPI, replyVendorLeadAPI } from '../../api/api';
 import { io } from 'socket.io-client';
 
 export default function VendorPropertyMessagesTab() {
@@ -20,7 +20,7 @@ export default function VendorPropertyMessagesTab() {
     const fetchLeads = async () => {
       try {
         setLoading(true);
-        const res = await axiosInstance.get('/vendor/leads');
+        const res = await getVendorLeadsAPI();
         const normalized = res.data.map(lead => ({
           id: lead._id,
           property: lead.property ? lead.property.name : 'General Inquiry',
@@ -72,7 +72,7 @@ export default function VendorPropertyMessagesTab() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this message?')) return;
     try {
-      await axiosInstance.delete(`/vendor/leads/${id}`);
+      await deleteVendorLeadAPI(id);
       setMessages(prev => prev.filter(m => m.id !== id));
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete message');
@@ -84,9 +84,7 @@ export default function VendorPropertyMessagesTab() {
     if (!replyText.trim() || !replyModal) return;
     try {
       setReplying(true);
-      await axiosInstance.post(`/vendor/leads/${replyModal.id}/reply`, {
-        text: replyText.trim(),
-      });
+      await replyVendorLeadAPI(replyModal.id, replyText.trim());
       alert('Reply sent successfully!');
       setReplyModal(null);
       setReplyText('');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Search } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminPropertiesAPI, approveAdminPropertyAPI, rejectAdminPropertyAPI, toggleAdminPropertyStatusAPI, toggleAdminPropertyFeaturedAPI, deleteAdminPropertyAPI } from '../../api/api';
 
 export default function PropertyManagementListTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function PropertyManagementListTab({ setActiveTab }) {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/properties');
+      const res = await getAdminPropertiesAPI();
       const normalized = res.data.map(p => ({
         id: p._id,
         title: p.title || p.name,
@@ -47,9 +47,9 @@ export default function PropertyManagementListTab({ setActiveTab }) {
   const handleApprovalChange = async (id, val) => {
     try {
       if (val === 'Approve') {
-        await axiosInstance.put(`/admin/properties/${id}/approve`);
+        await approveAdminPropertyAPI(id);
       } else {
-        await axiosInstance.put(`/admin/properties/${id}/reject`);
+        await rejectAdminPropertyAPI(id);
       }
       setProperties(properties.map(p => p.id === id ? { 
         ...p, 
@@ -64,7 +64,7 @@ export default function PropertyManagementListTab({ setActiveTab }) {
 
   const handleStatusChange = async (id, val) => {
     try {
-      await axiosInstance.put(`/admin/properties/${id}/toggle-status`, {
+      await toggleAdminPropertyStatusAPI(id, {
         isActive: val === 'Active'
       });
       setProperties(properties.map(p => p.id === id ? { ...p, status: val } : p));
@@ -76,7 +76,7 @@ export default function PropertyManagementListTab({ setActiveTab }) {
 
   const handleFeaturedChange = async (id, val) => {
     try {
-      await axiosInstance.put(`/admin/properties/${id}/toggle-featured`, {
+      await toggleAdminPropertyFeaturedAPI(id, {
         isFeatured: val === 'Yes'
       });
       setProperties(properties.map(p => p.id === id ? { ...p, featured: val } : p));
@@ -89,7 +89,7 @@ export default function PropertyManagementListTab({ setActiveTab }) {
   const handleDeleteProperty = async (id) => {
     if (!window.confirm('Are you sure you want to delete this property?')) return;
     try {
-      await axiosInstance.delete(`/admin/properties/${id}`);
+      await deleteAdminPropertyAPI(id);
       setProperties(properties.filter(p => p.id !== id));
     } catch (err) {
       alert('Failed to delete property');

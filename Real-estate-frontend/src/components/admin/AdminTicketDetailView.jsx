@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, CornerUpLeft, Home, ChevronDown, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminTicketDetailAPI, replyAdminTicketAPI, updateAdminTicketStatusAPI } from '../../api/api';
 import { io } from 'socket.io-client';
 
 export default function AdminTicketDetailView({ ticket, onBack }) {
@@ -21,7 +21,7 @@ export default function AdminTicketDetailView({ ticket, onBack }) {
   const fetchTicketDetails = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(`/admin/tickets/${ticketId}`);
+      const res = await getAdminTicketDetailAPI(ticketId);
       setTicketDetails(res.data);
       setStatus(res.data.status);
       
@@ -80,7 +80,7 @@ export default function AdminTicketDetailView({ ticket, onBack }) {
 
     setReplying(true);
     try {
-      const res = await axiosInstance.post(`/admin/tickets/${ticketId}/reply`, {
+      const res = await replyAdminTicketAPI(ticketId, {
         text: newReply
       });
 
@@ -124,7 +124,7 @@ export default function AdminTicketDetailView({ ticket, onBack }) {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      await axiosInstance.put(`/admin/tickets/${ticketId}/status`, {
+      await updateAdminTicketStatusAPI(ticketId, {
         status: newStatus
       });
       setStatus(newStatus);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminBlogPostsAPI, deleteAdminBlogPostAPI } from '../../api/api';
 
 export default function BlogPostsTab({ setBlogExpanded, setActiveTab }) {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function BlogPostsTab({ setBlogExpanded, setActiveTab }) {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(`/admin/blog/posts?lang=${lang}`);
+      const res = await getAdminBlogPostsAPI({ lang });
       setBlogPosts(res.data);
       setLoading(false);
     } catch (err) {
@@ -30,7 +30,7 @@ export default function BlogPostsTab({ setBlogExpanded, setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this blog post?')) return;
     try {
-      await axiosInstance.delete(`/admin/blog/posts/${id}`);
+      await deleteAdminBlogPostAPI(id);
       setBlogPosts(prev => prev.filter(p => p._id !== id));
       setActionDropdownId(null);
       alert('Blog post deleted successfully');

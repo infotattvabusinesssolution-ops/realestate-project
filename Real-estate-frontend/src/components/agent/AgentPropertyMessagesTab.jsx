@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Trash2, Mail, Send, X, MessageCircle } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAgentLeadsAPI, deleteAgentLeadAPI, replyAgentLeadAPI } from '../../api/api';
 
 export default function AgentPropertyMessagesTab() {
   const [search, setSearch] = useState('');
@@ -16,7 +16,7 @@ export default function AgentPropertyMessagesTab() {
   const fetchMessages = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/agent/leads');
+      const res = await getAgentLeadsAPI();
       setMessages(res.data);
     } catch (err) {
       console.error('Failed to load agent leads:', err);
@@ -32,7 +32,7 @@ export default function AgentPropertyMessagesTab() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this message?')) return;
     try {
-      await axiosInstance.delete(`/agent/leads/${id}`);
+      await deleteAgentLeadAPI(id);
       setMessages(messages.filter(msg => msg._id !== id));
       alert('Message deleted successfully!');
     } catch (err) {
@@ -46,9 +46,7 @@ export default function AgentPropertyMessagesTab() {
 
     try {
       setSending(true);
-      await axiosInstance.post(`/agent/leads/${replyMessage._id}/reply`, {
-        text: replyText
-      });
+      await replyAgentLeadAPI(replyMessage._id, replyText);
       alert('Reply sent successfully!');
       setReplyText('');
       setReplyMessage(null);

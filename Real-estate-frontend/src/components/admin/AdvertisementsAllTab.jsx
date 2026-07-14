@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2, Image as ImageIcon } from 'lucide-react';
 import AddAdvertisementModal from '../modal/admin/AddAdvertisementModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminAdvertisementsAPI, deleteAdminAdvertisementAPI, createAdminAdvertisementAPI } from '../../api/api';
 
 export default function AdvertisementsAllTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function AdvertisementsAllTab({ setActiveTab }) {
   const fetchAds = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/advertisements');
+      const res = await getAdminAdvertisementsAPI();
       setAds(res.data);
       setLoading(false);
     } catch (err) {
@@ -47,7 +47,7 @@ export default function AdvertisementsAllTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this advertisement?')) return;
     try {
-      await axiosInstance.delete(`/admin/advertisements/${id}`);
+      await deleteAdminAdvertisementAPI(id);
       setAds(ads.filter(ad => ad._id !== id));
       setSelectedIds(selectedIds.filter(x => x !== id));
       alert('Advertisement deleted successfully');
@@ -58,7 +58,7 @@ export default function AdvertisementsAllTab({ setActiveTab }) {
 
   const handleAddAd = async (newAd) => {
     try {
-      const res = await axiosInstance.post('/admin/advertisements', newAd);
+      const res = await createAdminAdvertisementAPI(newAd);
       setAds([res.data, ...ads]);
       setIsModalOpen(false);
       alert('Advertisement added successfully!');

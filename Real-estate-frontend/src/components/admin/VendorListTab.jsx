@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ChevronDown } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminUsersAPI, deleteAdminUserAPI, updateAdminUserStatusAPI, updateAdminUserAPI } from '../../api/api';
 
 export default function VendorListTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function VendorListTab({ setActiveTab }) {
   const fetchVendors = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/users?role=vendor');
+      const res = await getAdminUsersAPI({ role: 'vendor' });
       const normalized = res.data.map(v => ({
         id: v._id,
         username: v.username || v.name,
@@ -35,7 +35,7 @@ export default function VendorListTab({ setActiveTab }) {
   const handleDeleteVendor = async (id) => {
     if (!window.confirm('Are you sure you want to delete this vendor?')) return;
     try {
-      await axiosInstance.delete(`/admin/users/${id}`);
+      await deleteAdminUserAPI(id);
       setVendors(prev => prev.filter(v => v.id !== id));
       setActionDropdownId(null);
       alert('Vendor removed successfully');
@@ -59,7 +59,7 @@ export default function VendorListTab({ setActiveTab }) {
 
   const handleAccountStatusChange = async (id, val) => {
     try {
-      await axiosInstance.put(`/admin/users/${id}/status`, {
+      await updateAdminUserStatusAPI(id, {
         isActive: val === 'Active'
       });
       setVendors(prev => prev.map(v => v.id === id ? { ...v, accountStatus: val } : v));
@@ -71,7 +71,7 @@ export default function VendorListTab({ setActiveTab }) {
 
   const handleEmailStatusChange = async (id, val) => {
     try {
-      await axiosInstance.put(`/admin/users/${id}`, {
+      await updateAdminUserAPI(id, {
         emailStatus: val,
         isEmailVerified: val === 'Verified'
       });

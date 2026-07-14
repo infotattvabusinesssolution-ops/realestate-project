@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, ChevronDown } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminTicketsAPI, updateAdminTicketStatusAPI } from '../../api/api';
 import AdminTicketDetailView from './AdminTicketDetailView';
 
 export default function TicketsListTab({ setActiveTab, filterType }) {
@@ -15,7 +15,7 @@ export default function TicketsListTab({ setActiveTab, filterType }) {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/tickets');
+      const res = await getAdminTicketsAPI();
       const normalized = res.data.map(t => ({
         id: t._id,
         userType: t.user ? (t.user.role === 'customer' ? 'Customer' : t.user.role.toUpperCase()) : 'Customer',
@@ -44,7 +44,7 @@ export default function TicketsListTab({ setActiveTab, filterType }) {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await axiosInstance.put(`/admin/tickets/${id}/status`, { status: newStatus });
+      await updateAdminTicketStatusAPI(id, { status: newStatus });
       setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
       setStatusDropdownId(null);
     } catch (err) {

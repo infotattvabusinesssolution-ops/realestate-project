@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddOfflineGatewayModal from '../modal/admin/AddOfflineGatewayModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminOfflineGatewaysAPI, deleteAdminOfflineGatewayAPI, createAdminOfflineGatewayAPI } from '../../api/api';
 
 export default function OfflineGatewaysTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function OfflineGatewaysTab({ setActiveTab }) {
   const fetchGateways = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/gateways/offline');
+      const res = await getAdminOfflineGatewaysAPI();
       setGateways(res.data);
       setLoading(false);
     } catch (err) {
@@ -47,7 +47,7 @@ export default function OfflineGatewaysTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this offline gateway?')) return;
     try {
-      await axiosInstance.delete(`/admin/gateways/offline/${id}`);
+      await deleteAdminOfflineGatewayAPI(id);
       setGateways(gateways.filter(g => g._id !== id));
       setSelectedIds(selectedIds.filter(x => x !== id));
       alert('Offline gateway deleted successfully');
@@ -58,7 +58,7 @@ export default function OfflineGatewaysTab({ setActiveTab }) {
 
   const handleAddGateway = async (newGateway) => {
     try {
-      const res = await axiosInstance.post('/admin/gateways/offline', newGateway);
+      const res = await createAdminOfflineGatewayAPI(newGateway);
       setGateways([...gateways, res.data]);
       setIsModalOpen(false);
       alert('Offline gateway added successfully!');

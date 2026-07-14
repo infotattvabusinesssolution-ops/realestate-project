@@ -5,7 +5,7 @@ import {
   Link as LinkIcon, Image, Film, Table, AlignLeft, AlignCenter,
   AlignRight, AlignJustify, List, ListOrdered, Code, Maximize2, HelpCircle, Globe
 } from 'lucide-react';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminBlogCategoriesAPI, createAdminBlogPostAPI } from '../../api/api';
 
 export default function BlogPostAddTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export default function BlogPostAddTab({ setActiveTab }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axiosInstance.get('/admin/blog/categories');
+        const res = await getAdminBlogCategoriesAPI();
         setCategoriesList(res.data);
       } catch (err) {
         console.error('Failed to load categories:', err);
@@ -54,7 +54,7 @@ export default function BlogPostAddTab({ setActiveTab }) {
         language: cloneArabic ? 'Arabic' : 'English',
         image: imagePreview || undefined
       };
-      await axiosInstance.post('/admin/blog/posts', payload);
+      await createAdminBlogPostAPI(payload);
       alert('Blog post saved successfully!');
       setActiveTab('blog-posts');
     } catch (err) {

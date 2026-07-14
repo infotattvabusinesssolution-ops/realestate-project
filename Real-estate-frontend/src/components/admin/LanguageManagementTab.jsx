@@ -4,7 +4,7 @@ import { Home, Plus, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import AddKeywordModal from '../modal/admin/AddKeywordModal';
 import AddLanguageModal from '../modal/admin/AddLanguageModal';
 import EditLanguageModal from '../modal/admin/EditLanguageModal';
-import axiosInstance from '../../api/axiosInstance';
+import { getAdminLanguagesAPI, createAdminLanguageAPI, updateAdminLanguageAPI, deleteAdminLanguageAPI, setDefaultAdminLanguageAPI, addAdminLanguageKeywordsAPI, getAdminLanguageKeywordsAPI, updateAdminLanguageKeywordsAPI } from '../../api/api';
 
 export default function LanguageManagementTab({ setActiveTab }) {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
   const fetchLanguages = async () => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get('/admin/languages');
+      const res = await getAdminLanguagesAPI();
       setLanguages(res.data || []);
     } catch (err) {
       console.error('Error fetching languages:', err);
@@ -42,7 +42,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
 
   const handleMakeDefault = async (id) => {
     try {
-      await axiosInstance.put(`/admin/languages/${id}/default`);
+      await setDefaultAdminLanguageAPI(id);
       setLanguages(prev => prev.map(lang => ({
         ...lang,
         isDefault: lang._id === id
@@ -55,7 +55,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this language?')) return;
     try {
-      await axiosInstance.delete(`/admin/languages/${id}`);
+      await deleteAdminLanguageAPI(id);
       setLanguages(languages.filter(l => l._id !== id));
     } catch (err) {
       alert('Failed to delete language: ' + (err.response?.data?.message || err.message));
@@ -64,7 +64,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
 
   const handleAddLanguage = async (newLang) => {
     try {
-      const res = await axiosInstance.post('/admin/languages', {
+      const res = await createAdminLanguageAPI({
         name: newLang.name,
         code: newLang.code,
         direction: newLang.direction
@@ -78,7 +78,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
 
   const handleEditLanguage = async (updatedLang) => {
     try {
-      const res = await axiosInstance.put(`/admin/languages/${selectedLangForEdit._id}`, updatedLang);
+      const res = await updateAdminLanguageAPI(selectedLangForEdit._id, updatedLang);
       setLanguages(prev => prev.map(l => l._id === selectedLangForEdit._id ? res.data : l));
       setIsEditModalOpen(false);
       setSelectedLangForEdit(null);
@@ -90,7 +90,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
 
   const handleAddKeyword = async (newKeyword) => {
     try {
-      await axiosInstance.post('/admin/languages/keywords', {
+      await addAdminLanguageKeywordsAPI({
         keyword: newKeyword.keyword,
         value: newKeyword.value
       });
@@ -108,7 +108,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
   const handleOpenKeywordEditor = async (lang) => {
     try {
       setLoading(true);
-      const res = await axiosInstance.get(`/admin/languages/${lang._id}/keywords`);
+      const res = await getAdminLanguageKeywordsAPI(lang._id);
       const dict = res.data || {};
       const arr = Object.keys(dict).map(key => ({
         key,
@@ -134,7 +134,7 @@ export default function LanguageManagementTab({ setActiveTab }) {
       keywordsList.forEach(item => {
         keywordsObj[item.key] = item.value;
       });
-      await axiosInstance.put(`/admin/languages/${editingKeywordsLang._id}/keywords`, {
+      await updateAdminLanguageKeywordsAPI(editingKeywordsLang._id, {
         keywords: keywordsObj
       });
       alert('Keywords saved successfully for ' + editingKeywordsLang.name);
