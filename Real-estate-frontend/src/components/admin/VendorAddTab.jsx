@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { createAdminUserAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export default function VendorAddTab({ setActiveTab }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -33,30 +35,60 @@ export default function VendorAddTab({ setActiveTab }) {
     reader.readAsDataURL(file);
   };
 
+  const validateEmail = (emailVal) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
+
+    if (!username.trim()) {
+      toast.error('Username is required');
+      return;
+    }
+    if (!password) {
+      toast.error('Password is required');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (!email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!validateEmail(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (!name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
-        name,
-        username,
-        email,
+        name: name.trim(),
+        username: username.trim(),
+        email: email.trim(),
         password,
         role: 'vendor',
-        phone,
-        city,
-        state,
-        zip: zipCode,
-        address,
+        phone: phone.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        zip: zipCode.trim(),
+        address: address.trim(),
         avatar: avatar || undefined,
-        specialization: details || 'General',
+        specialization: details.trim() || 'General',
         status: 'Active',
       };
       await createAdminUserAPI(payload);
-      alert('Vendor added successfully!');
+      toast.success('Vendor added successfully!');
       setActiveTab('vendor-list');
     } catch (err) {
-      alert('Failed to add vendor: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to add vendor: ' + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }

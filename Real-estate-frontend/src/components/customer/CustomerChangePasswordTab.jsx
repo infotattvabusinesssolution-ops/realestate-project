@@ -1,26 +1,36 @@
 import React, { useState } from 'react';
 import { changePasswordAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export default function CustomerChangePasswordTab() {
+  const toast = useToast();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (newPass.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
     if (newPass !== confirm) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     
     try {
+      setSubmitting(true);
       await changePasswordAPI(current, newPass);
-      alert('Password updated successfully!');
+      toast.success('Password updated successfully!');
       setCurrent('');
       setNewPass('');
       setConfirm('');
     } catch (err) {
-      alert(err || 'Failed to change password. Please verify current password.');
+      toast.error(err || 'Failed to change password. Please verify current password.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -42,9 +52,10 @@ export default function CustomerChangePasswordTab() {
               type="password" 
               required 
               value={current} 
+              disabled={submitting}
               onChange={(e) => setCurrent(e.target.value)} 
               placeholder="Current Password"
-              className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50" 
+              className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50 disabled:bg-slate-50" 
             />
           </div>
 
@@ -53,9 +64,10 @@ export default function CustomerChangePasswordTab() {
               type="password" 
               required 
               value={newPass} 
+              disabled={submitting}
               onChange={(e) => setNewPass(e.target.value)} 
               placeholder="New Password"
-              className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-855 focus:outline-none focus:ring-1 focus:ring-orange-500/50" 
+              className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-855 focus:outline-none focus:ring-1 focus:ring-orange-500/50 disabled:bg-slate-50" 
             />
           </div>
 
@@ -64,9 +76,10 @@ export default function CustomerChangePasswordTab() {
               type="password" 
               required 
               value={confirm} 
+              disabled={submitting}
               onChange={(e) => setConfirm(e.target.value)} 
               placeholder="Confirm Password"
-              className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50" 
+              className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50 disabled:bg-slate-50" 
             />
           </div>
 
@@ -74,9 +87,10 @@ export default function CustomerChangePasswordTab() {
           <div className="pt-2">
             <button 
               type="submit" 
-              className="px-6 py-2.5 bg-[#f97316] hover:bg-orange-655 text-white rounded-xl font-bold text-xs transition active:scale-95 shadow-md shadow-orange-500/10"
+              disabled={submitting}
+              className="px-6 py-2.5 bg-[#f97316] hover:bg-orange-655 text-white rounded-xl font-bold text-xs transition active:scale-95 shadow-md shadow-orange-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit
+              {submitting ? 'Updating...' : 'Submit'}
             </button>
           </div>
 

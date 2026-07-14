@@ -9,8 +9,10 @@ import {
   getVendorAgentsAPI, 
   uploadFileAPI 
 } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
+  const toast = useToast();
   const [selectedType, setSelectedType] = useState('none'); // 'none', 'commercial', 'residential'
   const [submitting, setSubmitting] = useState(false);
 
@@ -206,9 +208,9 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
       else if (type === 'floorPlan') setFloorPlanUrl(res.data.url);
       else if (type === 'videoImage') setVideoImageUrl(res.data.url);
 
-      alert('Image uploaded successfully!');
+      toast.success('Image uploaded successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Image upload failed');
+      toast.error(err.response?.data?.message || 'Image upload failed');
     } finally {
       if (type === 'thumbnail') setUploadingThumbnail(false);
       else if (type === 'floorPlan') setUploadingFloorPlan(false);
@@ -231,9 +233,9 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
         urls.push(res.data.url);
       }
       setGalleryUrls([...galleryUrls, ...urls]);
-      alert('Gallery images uploaded successfully!');
+      toast.success('Gallery images uploaded successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Gallery upload failed');
+      toast.error(err.response?.data?.message || 'Gallery upload failed');
     } finally {
       setUploadingGallery(false);
     }
@@ -278,8 +280,48 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !price) {
-      alert('Please fill out the Property Title and Price.');
+    if (!title) {
+      toast.error('Property Title is required');
+      return;
+    }
+    if (!price) {
+      toast.error('Price is required');
+      return;
+    }
+    if (!purpose) {
+      toast.error('Purpose (Rent/Buy) is required');
+      return;
+    }
+    if (!category) {
+      toast.error('Category is required');
+      return;
+    }
+    if (!country) {
+      toast.error('Country is required');
+      return;
+    }
+    if (!stateName) {
+      toast.error('State is required');
+      return;
+    }
+    if (!cityName) {
+      toast.error('City is required');
+      return;
+    }
+    if (!area) {
+      toast.error('Area is required');
+      return;
+    }
+    if (!address) {
+      toast.error('Address is required');
+      return;
+    }
+    if (!description) {
+      toast.error('Description is required');
+      return;
+    }
+    if (selectedType === 'residential' && (!beds || !baths)) {
+      toast.error('Beds and Baths are required for residential property');
       return;
     }
 
@@ -880,6 +922,7 @@ export function VendorPropertyAddTab({ setActiveTab, onSave, properties }) {
 }
 
 export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAddClick }) {
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
 
@@ -911,16 +954,20 @@ export function VendorPropertyListTab({ setActiveTab, properties, onDelete, onAd
   const handleStatusChange = async (id, newActiveState) => {
     try {
       await updateVendorPropertyAPI(id, { isActive: newActiveState === 'Active' });
+      toast.success('Property status updated successfully!');
     } catch (err) {
       console.error('Failed to update status:', err);
+      toast.error(err.response?.data?.message || 'Failed to update status');
     }
   };
 
   const handleFeaturedChange = async (id, newFeaturedState) => {
     try {
       await updateVendorPropertyAPI(id, { isFeatured: newFeaturedState === 'Yes' });
+      toast.success('Property featured status updated!');
     } catch (err) {
       console.error('Failed to update featured:', err);
+      toast.error(err.response?.data?.message || 'Failed to update featured status');
     }
   };
 

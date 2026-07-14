@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import {
   Users, Building2, HardHat, FileText, DollarSign, Award, CreditCard,
   ChevronDown, ChevronRight, Moon, Sun, Bell, LogOut, Key, UserCheck, Play,
@@ -33,6 +34,7 @@ import {
 export default function VendorDashboard() {
   const navigate = useNavigate();
   const { user, token, loading, logout } = useAuth();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -122,13 +124,14 @@ export default function VendorDashboard() {
             sessionId,
             packageId,
           });
-          alert('Subscription updated successfully! Your active plan is ready.');
+          toast.success('Subscription updated successfully! Your active plan is ready.');
           // Remove query params from URL without reloading
           window.history.replaceState({}, document.title, window.location.pathname);
           // Reload dashboard data
           fetchVendorData();
         } catch (err) {
           console.error('Failed to verify payment session:', err);
+          toast.error('Failed to verify payment session.');
         }
       }
     };
@@ -145,9 +148,10 @@ export default function VendorDashboard() {
         leads: 0
       };
       setPropertiesList([...propertiesList, newProp]);
+      toast.success('Property created successfully!');
       setActiveTab('properties-list');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add property');
+      toast.error(err.response?.data?.message || 'Failed to add property');
     }
   };
 
@@ -155,8 +159,9 @@ export default function VendorDashboard() {
     try {
       await deleteVendorPropertyAPI(id);
       setPropertiesList(propertiesList.filter(p => p.id !== id));
+      toast.success('Property deleted successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete property');
+      toast.error(err.response?.data?.message || 'Failed to delete property');
     }
   };
 
@@ -168,9 +173,10 @@ export default function VendorDashboard() {
         id: res.data._id
       };
       setProjectsList([...projectsList, newProj]);
+      toast.success('Project created successfully!');
       setActiveTab('projects-list');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add project');
+      toast.error(err.response?.data?.message || 'Failed to add project');
     }
   };
 
@@ -178,8 +184,9 @@ export default function VendorDashboard() {
     try {
       await deleteVendorProjectAPI(id);
       setProjectsList(projectsList.filter(p => p.id !== id));
+      toast.success('Project deleted successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete project');
+      toast.error(err.response?.data?.message || 'Failed to delete project');
     }
   };
 

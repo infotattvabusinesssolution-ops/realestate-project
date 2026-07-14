@@ -12,6 +12,7 @@ import AgentPropertyMessagesTab from '../components/agent/AgentPropertyMessagesT
 import AgentEditProfileTab from '../components/agent/AgentEditProfileTab';
 import AgentChangePasswordTab from '../components/agent/AgentChangePasswordTab';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { 
   getAgentStatsAPI, 
   getAgentChartDataAPI, 
@@ -28,6 +29,7 @@ import {
 export default function AgentDashboard() {
   const navigate = useNavigate();
   const { user, token, loading, logout } = useAuth();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileExpanded, setProfileExpanded] = useState(false);
@@ -119,9 +121,10 @@ export default function AgentDashboard() {
         status: 'Active'
       };
       setPropertiesList([...propertiesList, newProp]);
+      toast.success('Property added successfully!');
       setActiveTab('properties-list');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add property');
+      toast.error(err.response?.data?.message || 'Failed to add property');
     }
   };
 
@@ -129,8 +132,9 @@ export default function AgentDashboard() {
     try {
       await deleteAgentPropertyAPI(id);
       setPropertiesList(propertiesList.filter(p => p.id !== id));
+      toast.success('Property deleted successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete property');
+      toast.error(err.response?.data?.message || 'Failed to delete property');
     }
   };
 
@@ -138,8 +142,9 @@ export default function AgentDashboard() {
     try {
       const res = await updateAgentPropertyAPI(id, updatedFields);
       setPropertiesList(propertiesList.map(p => p.id === id ? { ...p, ...res.data, id: res.data._id } : p));
+      toast.success('Property updated successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update property');
+      toast.error(err.response?.data?.message || 'Failed to update property');
     }
   };
 

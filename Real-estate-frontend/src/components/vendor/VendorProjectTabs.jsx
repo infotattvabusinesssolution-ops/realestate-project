@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import { getVendorAgentsAPI, updateVendorProjectAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export function VendorProjectAddTab({ setActiveTab, onSave }) {
+  const toast = useToast();
   // --- Dropdown data ---
   const [agentsList, setAgentsList] = useState([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(true);
@@ -70,8 +72,20 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !minPrice) {
-      alert('Please fill out the Project Title and Minimum Price.');
+    if (!title) {
+      toast.error('Project Title is required');
+      return;
+    }
+    if (!minPrice) {
+      toast.error('Minimum Price is required');
+      return;
+    }
+    if (!address) {
+      toast.error('Address (Location) is required');
+      return;
+    }
+    if (!description) {
+      toast.error('Description is required');
       return;
     }
 
@@ -428,6 +442,7 @@ export function VendorProjectAddTab({ setActiveTab, onSave }) {
 }
 
 export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddClick }) {
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
 
@@ -456,8 +471,10 @@ export function VendorProjectListTab({ setActiveTab, projects, onDelete, onAddCl
   const handleStatusChange = async (id, newStatusValue) => {
     try {
       await updateVendorProjectAPI(id, { status: newStatusValue });
+      toast.success('Project status updated successfully!');
     } catch (err) {
       console.error('Failed to update project status:', err);
+      toast.error(err.response?.data?.message || 'Failed to update project status');
     }
   };
 

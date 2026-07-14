@@ -46,6 +46,9 @@ export const registerUser = async (req, res) => {
     }
   } catch (error) {
     console.error('Register Error:', error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -153,6 +156,9 @@ export const updateUserProfile = async (req, res) => {
       res.status(404).json({ message: 'User not found' });
     }
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -174,6 +180,9 @@ export const changeUserPassword = async (req, res) => {
       res.status(400).json({ message: 'Invalid current password' });
     }
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };

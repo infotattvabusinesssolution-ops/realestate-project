@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Home, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import AddVendorAgentModal from '../modal/vendor/AddVendorAgentModal';
 import { getVendorAgentsAPI, createVendorAgentAPI, updateVendorAgentAPI, deleteVendorAgentAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export function VendorAgentsTab() {
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [agents, setAgents] = useState([]);
@@ -49,9 +51,10 @@ export function VendorAgentsTab() {
         status: res.data.status || 'Active',
       };
       setAgents([...agents, newAgent]);
+      toast.success('Agent added successfully!');
       setIsModalOpen(false);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add agent');
+      toast.error(err.response?.data?.message || 'Failed to add agent');
     }
   };
 
@@ -59,8 +62,9 @@ export function VendorAgentsTab() {
     try {
       await updateVendorAgentAPI(id, { status: newStatus });
       setAgents(agents.map(a => a.id === id ? { ...a, status: newStatus } : a));
+      toast.success('Agent status updated!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update agent status');
+      toast.error(err.response?.data?.message || 'Failed to update agent status');
     }
   };
 
@@ -69,8 +73,9 @@ export function VendorAgentsTab() {
     try {
       await deleteVendorAgentAPI(id);
       setAgents(agents.filter(a => a.id !== id));
+      toast.success('Agent removed successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete agent');
+      toast.error(err.response?.data?.message || 'Failed to delete agent');
     }
   };
 

@@ -1,30 +1,35 @@
 import React, { useState } from 'react';
 import { Home } from 'lucide-react';
 import { changePasswordAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export function VendorChangePasswordTab() {
+  const toast = useToast();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
-
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (newPass.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
     if (newPass !== confirm) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     
     try {
       setSubmitting(true);
       await changePasswordAPI(current, newPass);
-      alert('Password updated successfully!');
+      toast.success('Password updated successfully!');
       setCurrent('');
       setNewPass('');
       setConfirm('');
     } catch (err) {
-      alert(err || 'Failed to change password. Please verify current password.');
+      toast.error(err || 'Failed to change password. Please verify current password.');
     } finally {
       setSubmitting(false);
     }

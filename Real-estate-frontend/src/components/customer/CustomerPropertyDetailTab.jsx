@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Home, Eye, Heart, Star, ChevronLeft, ChevronRight, Mail, Phone, Clock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { createInquiryAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export default function CustomerPropertyDetailTab({ property, onBack }) {
   const { user } = useAuth();
+  const toast = useToast();
   const propertyName = property?.name || 'Luxury Condo with Stunning City Views';
   
   // Local state for carousel images - build from property data
@@ -38,11 +40,11 @@ export default function CustomerPropertyDetailTab({ property, onBack }) {
     try {
       setSending(true);
       await createInquiryAPI(property?._id || property?.id, messageText);
-      alert('Message sent to advisor successfully!');
+      toast.success('Message sent to advisor successfully!');
       setMessageText('');
     } catch (err) {
       console.error('Failed to send inquiry message:', err);
-      alert(err.response?.data?.message || 'Failed to send inquiry message');
+      toast.error(err.response?.data?.message || 'Failed to send inquiry message');
     } finally {
       setSending(false);
     }

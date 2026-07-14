@@ -1,25 +1,56 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { useToast } from '../../../context/ToastContext';
 
 export default function AddVendorAgentModal({ isOpen, onClose, onSave }) {
+  const toast = useToast();
   const [username, setUsername] = useState('admin');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [password, setPassword] = useState('•••••');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const validateEmail = (emailVal) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!username || !email) {
-      alert('Please enter username and email');
+    if (!username.trim()) {
+      toast.error('Username is required');
       return;
     }
+    if (!email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!validateEmail(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error('First and Last names are required');
+      return;
+    }
+    if (!password) {
+      toast.error('Password is required');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
     onSave({
-      username,
-      email,
-      firstName,
-      lastName,
+      username: username.trim(),
+      email: email.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       password
     });
     // Reset modal states
@@ -27,7 +58,7 @@ export default function AddVendorAgentModal({ isOpen, onClose, onSave }) {
     setEmail('');
     setFirstName('');
     setLastName('');
-    setPassword('•••••');
+    setPassword('');
     setConfirmPassword('');
   };
 

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Globe, ChevronDown, Building2, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
   const { login, register } = useAuth();
+  const toast = useToast();
   
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
@@ -16,36 +18,97 @@ export default function CustomerLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const validateEmail = (emailVal) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+
+    // Local form validations
+    if (isLogin) {
+      if (!email.trim()) {
+        setError('Email Address is required.');
+        toast.error('Email Address is required.');
+        return;
+      }
+      if (!validateEmail(email.trim())) {
+        setError('Please enter a valid email address.');
+        toast.error('Please enter a valid email address.');
+        return;
+      }
+      if (!password) {
+        setError('Password is required.');
+        toast.error('Password is required.');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        toast.error('Password must be at least 6 characters.');
+        return;
+      }
+    } else {
+      if (!name.trim()) {
+        setError('Full Name is required.');
+        toast.error('Full Name is required.');
+        return;
+      }
+      if (!email.trim()) {
+        setError('Email Address is required.');
+        toast.error('Email Address is required.');
+        return;
+      }
+      if (!validateEmail(email.trim())) {
+        setError('Please enter a valid email address.');
+        toast.error('Please enter a valid email address.');
+        return;
+      }
+      if (!password) {
+        setError('Password is required.');
+        toast.error('Password is required.');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        toast.error('Password must be at least 6 characters.');
+        return;
+      }
+      if (phone.trim() && !/^\+?[0-9\s-]{7,15}$/.test(phone.trim())) {
+        setError('Please enter a valid phone number (7-15 digits).');
+        toast.error('Please enter a valid phone number (7-15 digits).');
+        return;
+      }
+    }
+
+    setIsLoading(true);
 
     try {
       if (isLogin) {
         // Customer login
-        const loggedUser = await login(email, password);
+        const loggedUser = await login(email.trim(), password);
         if (loggedUser.role !== 'customer') {
-          setError(`Access denied. You are registered as a '${loggedUser.role}'.`);
+          const errMsg = `Access denied. You are registered as a '${loggedUser.role}'.`;
+          setError(errMsg);
+          toast.error(errMsg);
           setIsLoading(false);
           return;
         }
         setIsLoading(false);
+        toast.success('Logged in successfully!');
         navigate('/dashboard/customer');
       } else {
         // Customer signup
-        if (!name || !email || !password) {
-          setError('Please fill in all required fields.');
-          setIsLoading(false);
-          return;
-        }
-        await register(name, email, password, 'customer', phone, city);
+        await register(name.trim(), email.trim(), password, 'customer', phone.trim(), city.trim());
         setIsLoading(false);
+        toast.success('Registered successfully!');
         navigate('/dashboard/customer');
       }
     } catch (err) {
       setIsLoading(false);
-      setError(err || 'Authentication failed. Please verify fields.');
+      const errMsg = err.response?.data?.message || err || 'Authentication failed. Please verify fields.';
+      setError(errMsg);
+      toast.error(errMsg);
     }
   };
 

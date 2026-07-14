@@ -3,9 +3,11 @@ import { Home, ChevronDown, Mail, Phone, Trash2, MessageCircle, X, Send } from '
 import { useAuth } from '../../context/AuthContext';
 import { getVendorLeadsAPI, deleteVendorLeadAPI, replyVendorLeadAPI } from '../../api/api';
 import { io } from 'socket.io-client';
+import { useToast } from '../../context/ToastContext';
 
 export default function VendorPropertyMessagesTab() {
   const { user } = useAuth();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,8 +76,9 @@ export default function VendorPropertyMessagesTab() {
     try {
       await deleteVendorLeadAPI(id);
       setMessages(prev => prev.filter(m => m.id !== id));
+      toast.success('Message deleted successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete message');
+      toast.error(err.response?.data?.message || 'Failed to delete message');
     }
   };
 
@@ -85,11 +88,11 @@ export default function VendorPropertyMessagesTab() {
     try {
       setReplying(true);
       await replyVendorLeadAPI(replyModal.id, replyText.trim());
-      alert('Reply sent successfully!');
+      toast.success('Reply sent successfully!');
       setReplyModal(null);
       setReplyText('');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to send reply');
+      toast.error(err.response?.data?.message || 'Failed to send reply');
     } finally {
       setReplying(false);
     }

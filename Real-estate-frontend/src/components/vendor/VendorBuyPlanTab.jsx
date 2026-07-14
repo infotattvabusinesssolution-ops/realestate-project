@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getPackagesAPI, getVendorPaymentLogsAPI, createVendorCheckoutSessionAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export function VendorBuyPlanTab() {
+  const toast = useToast();
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState(null);
@@ -53,7 +55,7 @@ export function VendorBuyPlanTab() {
       // Redirect to simulated Stripe Checkout page
       window.location.href = res.data.url;
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to initialize payment checkout session');
+      toast.error(err.response?.data?.message || 'Failed to initialize payment checkout session');
       setPurchasingId(null);
     }
   };

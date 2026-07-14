@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, Image as ImageIcon } from 'lucide-react';
+import { useToast } from '../../../context/ToastContext';
 
 export default function AddAdminModal({ isOpen, onClose, onSave }) {
+  const toast = useToast();
   const [imagePreview, setImagePreview] = useState(null);
   const [role, setRole] = useState('');
   const [username, setUsername] = useState('');
@@ -13,22 +15,51 @@ export default function AddAdminModal({ isOpen, onClose, onSave }) {
 
   if (!isOpen) return null;
 
+  const validateEmail = (emailVal) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!role || !username || !email || !firstName || !lastName || !password || !confirmPassword) {
-      alert('Please fill in all required fields.');
+    if (!role) {
+      toast.error('Role is required');
+      return;
+    }
+    if (!username.trim()) {
+      toast.error('Username is required');
+      return;
+    }
+    if (!email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!validateEmail(email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error('First and Last names are required');
+      return;
+    }
+    if (!password) {
+      toast.error('Password is required');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
       return;
     }
     if (password !== confirmPassword) {
-      alert('Passwords do not match.');
+      toast.error('Passwords do not match');
       return;
     }
+
     onSave({
       role,
-      username,
-      email,
-      firstName,
-      lastName,
+      username: username.trim(),
+      email: email.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       password,
       avatar: imagePreview || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80',
       status: 'Active'

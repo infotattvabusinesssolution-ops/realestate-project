@@ -6,8 +6,10 @@ import {
   updateAgentProjectAPI, 
   deleteAgentProjectAPI 
 } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export function AgentProjectAddTab({ setActiveTab }) {
+  const toast = useToast();
   // Form fields state
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -54,8 +56,20 @@ export function AgentProjectAddTab({ setActiveTab }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !minPrice) {
-      alert('Please fill out the Project Title and Minimum Price.');
+    if (!title) {
+      toast.error('Project Title is required');
+      return;
+    }
+    if (!minPrice) {
+      toast.error('Minimum Price is required');
+      return;
+    }
+    if (!address) {
+      toast.error('Address (Location) is required');
+      return;
+    }
+    if (!description) {
+      toast.error('Description is required');
       return;
     }
     
@@ -82,10 +96,10 @@ export function AgentProjectAddTab({ setActiveTab }) {
           valueAr: f.valueAr
         })).filter(f => f.labelEn || f.valueEn)
       });
-      alert('Project created successfully!');
+      toast.success('Project created successfully!');
       setActiveTab('projects-list');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add project');
+      toast.error(err.response?.data?.message || 'Failed to add project');
     } finally {
       setSubmitting(false);
     }
@@ -316,6 +330,7 @@ export function AgentProjectAddTab({ setActiveTab }) {
 }
 
 export function AgentProjectListTab({ setActiveTab, onAddClick }) {
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [selectedLang, setSelectedLang] = useState('English');
   const [projects, setProjects] = useState([]);
@@ -342,19 +357,19 @@ export function AgentProjectListTab({ setActiveTab, onAddClick }) {
     try {
       await deleteAgentProjectAPI(id);
       setProjects(prev => prev.filter(p => p.id !== id));
-      alert('Project deleted successfully!');
+      toast.success('Project deleted successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete project');
+      toast.error(err.response?.data?.message || 'Failed to delete project');
     }
   };
-
+ 
   const handleStatusChange = async (id, statusVal) => {
     try {
       const res = await updateAgentProjectAPI(id, { status: statusVal });
       setProjects(prev => prev.map(p => p.id === id ? { ...p, ...res.data, id: res.data._id } : p));
-      alert('Project status updated!');
+      toast.success('Project status updated!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update project status');
+      toast.error(err.response?.data?.message || 'Failed to update project status');
     }
   };
 

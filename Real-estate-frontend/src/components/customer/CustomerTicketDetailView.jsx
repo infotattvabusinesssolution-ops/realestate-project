@@ -3,9 +3,11 @@ import { Download, CornerUpLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getCustomerTicketDetailAPI, replyCustomerTicketAPI } from '../../api/api';
 import { io } from 'socket.io-client';
+import { useToast } from '../../context/ToastContext';
 
 export default function CustomerTicketDetailView({ ticket, onBack }) {
   const { user } = useAuth();
+  const toast = useToast();
   const ticketId = ticket?._id || ticket?.id;
   const subject = ticket?.title || ticket?.subject || 'Unable to log in to account';
   const status = ticket?.status || 'Open';
@@ -102,7 +104,7 @@ export default function CustomerTicketDetailView({ ticket, onBack }) {
 
       setNewReply('');
     } catch (err) {
-      alert('Failed to submit ticket reply');
+      toast.error('Failed to submit ticket reply');
     }
   };
 
@@ -146,7 +148,7 @@ export default function CustomerTicketDetailView({ ticket, onBack }) {
           </p>
 
           <button 
-            onClick={() => alert('Downloading attachments...')}
+            onClick={() => toast.info('Downloading attachments...')}
             className="flex items-center space-x-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-655 text-white rounded-xl text-[10px] font-bold transition active:scale-95 shadow-md shadow-orange-500/10"
           >
             <Download size={12} />

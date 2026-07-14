@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Mail, CornerUpLeft } from 'lucide-react';
 import { getCustomerTicketsAPI } from '../../api/api';
 
+import { useToast } from '../../context/ToastContext';
+
 // 1. Tickets List Tab
 export function CustomerSupportTicketsTab({ onViewTicket, onCreateClick }) {
   const [tickets, setTickets] = useState([]);
@@ -146,20 +148,32 @@ export function CustomerSupportTicketsTab({ onViewTicket, onCreateClick }) {
 
 // 2. Ticket Creation Tab
 export function CustomerCreateTicketTab({ onBack, onSave }) {
+  const toast = useToast();
   const [email, setEmail] = useState('test@kreativdev.com');
   const [subject, setSubject] = useState('');
   const [desc, setDesc] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!subject) return;
-    onSave({
-      subject,
-      email,
-      desc
-    });
-    alert('Support ticket created successfully!');
-    onBack();
+    if (!subject) {
+      toast.error('Subject is required');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await onSave({
+        subject,
+        email,
+        desc
+      });
+      toast.success('Support ticket created successfully!');
+      onBack();
+    } catch (err) {
+      // Error toasted in handleCreateTicket
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -232,9 +246,10 @@ export function CustomerCreateTicketTab({ onBack, onSave }) {
 
           <button 
             type="submit"
-            className="px-6 py-2.5 bg-orange-500 hover:bg-orange-655 text-white rounded-xl font-bold text-xs flex items-center space-x-1.5 transition active:scale-95 shadow-md shadow-orange-500/10"
+            disabled={submitting}
+            className="px-6 py-2.5 bg-orange-500 hover:bg-orange-655 text-white rounded-xl font-bold text-xs flex items-center space-x-1.5 transition active:scale-95 shadow-md shadow-orange-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>Submit</span>
+            <span>{submitting ? 'Submitting...' : 'Submit'}</span>
           </button>
 
         </form>

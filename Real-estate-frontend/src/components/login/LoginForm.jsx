@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Home, Mail, Lock, Eye, EyeOff, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export default function LoginForm({ role, themeClass, title, subtitle, bannerImage, bannerTitle, bannerDesc }) {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -42,30 +44,58 @@ export default function LoginForm({ role, themeClass, title, subtitle, bannerIma
 
   const style = themeStyles[role] || themeStyles.admin;
 
+  const validateEmail = (emailVal) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password) {
-      setError('Please fill in all fields.');
+    if (!email.trim()) {
+      setError('Email Address is required.');
+      toast.error('Email Address is required.');
+      return;
+    }
+
+    if (!validateEmail(email.trim())) {
+      setError('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    if (!password) {
+      setError('Password is required.');
+      toast.error('Password is required.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      toast.error('Password must be at least 6 characters.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const loggedUser = await login(email, password);
+      const loggedUser = await login(email.trim(), password);
       // Validate role mapping
       if (loggedUser.role !== role) {
-        setError(`Access denied. You are registered as a '${loggedUser.role}'.`);
+        const errMsg = `Access denied. You are registered as a '${loggedUser.role}'.`;
+        setError(errMsg);
+        toast.error(errMsg);
         setIsLoading(false);
         return;
       }
       setIsLoading(false);
+      toast.success('Logged in successfully!');
       navigate(`/dashboard/${role}`);
     } catch (err) {
       setIsLoading(false);
-      setError(err || 'Invalid email or password.');
+      const errMsg = err.response?.data?.message || err || 'Invalid email or password.';
+      setError(errMsg);
+      toast.error(errMsg);
     }
   };
 

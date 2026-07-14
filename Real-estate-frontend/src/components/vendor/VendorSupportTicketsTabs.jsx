@@ -8,6 +8,7 @@ import {
   createVendorTicketAPI 
 } from '../../api/api';
 import { io } from 'socket.io-client';
+import { useToast } from '../../context/ToastContext';
 
 // 1. Support Tickets Tab — List & Details router
 export function VendorSupportTicketsTab({ onAddClick }) {
@@ -180,6 +181,7 @@ function VendorSupportTicketsListView({ onSelectTicket, onAddClick }) {
 // 1c. Support Ticket Detail & Real-Time Replies View
 function VendorTicketDetailView({ ticket, onBack }) {
   const { user } = useAuth();
+  const toast = useToast();
   const ticketId = ticket?._id || ticket?.id;
   const [replies, setReplies] = useState([]);
   const [newReply, setNewReply] = useState('');
@@ -273,7 +275,7 @@ function VendorTicketDetailView({ ticket, onBack }) {
 
       setNewReply('');
     } catch (err) {
-      alert('Failed to submit ticket reply');
+      toast.error('Failed to submit ticket reply');
     }
   };
 
@@ -319,7 +321,7 @@ function VendorTicketDetailView({ ticket, onBack }) {
           </h3>
 
           <button 
-            onClick={() => alert('Downloading attachments...')}
+            onClick={() => toast.info('Downloading attachments...')}
             className="flex items-center space-x-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-[10px] font-bold transition active:scale-95 shadow-md shadow-orange-500/10"
           >
             <Download size={12} />
@@ -427,6 +429,7 @@ function VendorTicketDetailView({ ticket, onBack }) {
 // 2b. Create Support Ticket Tab
 export function VendorSupportTicketsAddTab({ setActiveTab }) {
   const { user } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState(user?.email || '');
   const [subject, setSubject] = useState('');
   const [urgency, setUrgency] = useState('Medium');
@@ -444,10 +447,10 @@ export function VendorSupportTicketsAddTab({ setActiveTab }) {
         urgency,
         text: desc || subject,
       });
-      alert('Support ticket created successfully!');
+      toast.success('Support ticket created successfully!');
       setActiveTab('tickets-list');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to create ticket');
+      toast.error(err.response?.data?.message || 'Failed to create ticket');
     } finally {
       setSubmitting(false);
     }

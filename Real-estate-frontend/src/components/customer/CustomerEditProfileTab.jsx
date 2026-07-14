@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCountriesAPI, fetchStatesAPI, fetchCitiesAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export default function CustomerEditProfileTab({ user = {}, onUpdateUser }) {
+  const toast = useToast();
+  const [updating, setUpdating] = useState(false);
   const [name, setName] = useState(user.name || 'Test User new');
   const [username, setUsername] = useState(user.username || 'user');
   const [email, setEmail] = useState(user.email || 'test@kreativdev.com');
@@ -84,12 +87,19 @@ export default function CustomerEditProfileTab({ user = {}, onUpdateUser }) {
     setCity('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onUpdateUser({
-      name, username, email, phone, country, state: stateName, city, zip, address
-    });
-    alert('Profile updated successfully!');
+    setUpdating(true);
+    try {
+      await onUpdateUser({
+        name, username, email, phone, country, state: stateName, city, zip, address
+      });
+      toast.success('Profile updated successfully!');
+    } catch (err) {
+      // Error toasted in handleUpdateUser
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -232,9 +242,10 @@ export default function CustomerEditProfileTab({ user = {}, onUpdateUser }) {
           <div className="pt-4">
             <button 
               type="submit" 
-              className="px-6 py-2.5 bg-[#f97316] hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition active:scale-95 shadow-md shadow-orange-500/10"
+              disabled={updating}
+              className="px-6 py-2.5 bg-[#f97316] hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition active:scale-95 shadow-md shadow-orange-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Update profile
+              {updating ? 'Updating...' : 'Update profile'}
             </button>
           </div>
 

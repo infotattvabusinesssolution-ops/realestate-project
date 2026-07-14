@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Home, ChevronDown, Camera } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { uploadFileAPI } from '../../api/api';
+import { useToast } from '../../context/ToastContext';
 
 export function VendorEditProfileTab() {
   const { user, updateProfile } = useAuth();
+  const toast = useToast();
   const fileInputRef = useRef(null);
   
   // States matching user schema
@@ -55,9 +57,9 @@ export function VendorEditProfileTab() {
       setUploading(true);
       const res = await uploadFileAPI(formData);
       setAvatar(res.data.url);
-      alert('Photo uploaded successfully!');
+      toast.success('Photo uploaded successfully!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to upload photo');
+      toast.error(err.response?.data?.message || 'Failed to upload photo');
     } finally {
       setUploading(false);
     }
@@ -77,9 +79,9 @@ export function VendorEditProfileTab() {
         specialization: details,
         avatar
       });
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (err) {
-      alert(err || 'Failed to update profile.');
+      toast.error(err || 'Failed to update profile.');
     } finally {
       setUpdating(false);
     }

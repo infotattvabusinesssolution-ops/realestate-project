@@ -168,6 +168,9 @@ export const createAgentProperty = async (req, res) => {
     const property = await Property.create(propertyData);
     res.status(201).json(property);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -203,6 +206,9 @@ export const updateAgentProperty = async (req, res) => {
     await property.save();
     res.json(property);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -277,6 +283,9 @@ export const createAgentProject = async (req, res) => {
     const project = await Project.create(projectData);
     res.status(201).json(project);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -310,6 +319,9 @@ export const updateAgentProject = async (req, res) => {
     await project.save();
     res.json(project);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -402,6 +414,9 @@ export const replyAgentLead = async (req, res) => {
 
     res.status(201).json(populated);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };

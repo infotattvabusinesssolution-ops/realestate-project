@@ -9,6 +9,7 @@ import CustomerEditProfileTab from '../components/customer/CustomerEditProfileTa
 import CustomerPropertyDetailTab from '../components/customer/CustomerPropertyDetailTab';
 import CustomerTicketDetailView from '../components/customer/CustomerTicketDetailView';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { 
   getCustomerWishlistAPI, 
   getCustomerStatsAPI, 
@@ -19,6 +20,7 @@ import {
 export default function CustomerDashboard() {
   const navigate = useNavigate();
   const { user, token, loading, logout, updateProfile } = useAuth();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -69,8 +71,10 @@ export default function CustomerDashboard() {
     try {
       await removeFromWishlistAPI(id);
       setWishlistItems(wishlistItems.filter(item => item.id !== id));
+      toast.success('Property removed from wishlist');
     } catch (err) {
       console.error('Failed to remove item:', err);
+      toast.error('Failed to remove property from wishlist');
     }
   };
 
@@ -78,7 +82,8 @@ export default function CustomerDashboard() {
     try {
       await updateProfile(updatedUser);
     } catch (err) {
-      alert(err || 'Failed to update profile');
+      toast.error(err || 'Failed to update profile');
+      throw err;
     }
   };
 
@@ -92,7 +97,8 @@ export default function CustomerDashboard() {
       setActiveTab('tickets');
     } catch (err) {
       console.error('Failed to create support ticket:', err);
-      alert(err.response?.data?.message || 'Failed to create support ticket');
+      toast.error(err.response?.data?.message || 'Failed to create support ticket');
+      throw err;
     }
   };
 

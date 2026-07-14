@@ -121,6 +121,9 @@ export const createVendorProperty = async (req, res) => {
 
     res.status(201).json(property);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -156,6 +159,9 @@ export const updateVendorProperty = async (req, res) => {
     await property.save();
     res.json(property);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -230,6 +236,9 @@ export const createVendorProject = async (req, res) => {
 
     res.status(201).json(project);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -286,6 +295,9 @@ export const updateVendorProject = async (req, res) => {
     await project.save();
     res.json(project);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -483,6 +495,9 @@ export const createVendorTicket = async (req, res) => {
 
     res.status(201).json(ticket);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -537,6 +552,9 @@ export const replyVendorTicket = async (req, res) => {
       res.status(404).json({ message: 'Ticket not found' });
     }
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -584,6 +602,9 @@ export const createVendorAgent = async (req, res) => {
 
     res.status(201).json(agentData);
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: Object.values(error.errors).map(val => val.message).join(', ') });
+    }
     res.status(500).json({ message: error.message });
   }
 };
