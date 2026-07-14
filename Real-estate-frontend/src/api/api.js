@@ -90,6 +90,12 @@ export const updateProfileAPI = (data) =>
 export const changePasswordAPI = (currentPassword, newPassword) => 
   axiosInstance.put('/auth/change-password', { currentPassword, newPassword });
 
+export const forgotPasswordAPI = (email) =>
+  axiosInstance.post('/auth/forgot-password', { email });
+
+export const resetPasswordAPI = (token, password) =>
+  axiosInstance.post(`/auth/reset-password/${token}`, { password });
+
 // --- CUSTOMER API ---
 export const getCustomerStatsAPI = () => 
   axiosInstance.get('/customer/stats');

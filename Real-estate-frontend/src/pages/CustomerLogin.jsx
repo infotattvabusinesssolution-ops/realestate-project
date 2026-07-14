@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Globe, ChevronDown, Building2, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { forgotPasswordAPI } from '../api/api';
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ export default function CustomerLogin() {
   const [city, setCity] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
 
   const validateEmail = (emailVal) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal);
@@ -112,6 +115,41 @@ export default function CustomerLogin() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!forgotEmail.trim()) {
+      setError('Email Address is required.');
+      toast.error('Email Address is required.');
+      return;
+    }
+
+    if (!validateEmail(forgotEmail.trim())) {
+      setError('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await forgotPasswordAPI(forgotEmail.trim());
+      setIsLoading(false);
+      toast.success(res.data?.message || 'Password reset link sent successfully!');
+      
+      if (res.data?.previewUrl) {
+        console.log('Ethereal preview URL:', res.data.previewUrl);
+      }
+      
+      setShowForgotPassword(false);
+    } catch (err) {
+      setIsLoading(false);
+      const errMsg = err.response?.data?.message || err || 'Failed to send password reset email.';
+      setError(errMsg);
+      toast.error(errMsg);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
       
@@ -185,116 +223,173 @@ export default function CustomerLogin() {
       <div className="flex-1 flex items-center justify-center py-16 px-6">
         <div className="bg-white border border-slate-100 rounded-2xl max-w-md w-full p-8 shadow-premium space-y-6">
           <h2 className="text-base font-extrabold text-slate-800 uppercase tracking-wider text-left pb-3 border-b border-slate-100">
-            {isLogin ? 'Login' : 'Sign Up'}
+            {showForgotPassword ? 'Reset Password' : isLogin ? 'Login' : 'Sign Up'}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs font-bold text-slate-700">
-            {error && (
-              <div className="flex items-center space-x-3 p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-sm">
-                <ShieldAlert size={16} className="flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+          {showForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4 text-xs font-bold text-slate-700">
+              {error && (
+                <div className="flex items-center space-x-3 p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-sm">
+                  <ShieldAlert size={16} className="flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
-            {!isLogin && (
-              <div className="flex flex-col space-y-1.5">
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                Enter your email address below, and we will send you a secure link to reset your password.
+              </p>
+
+              <div className="flex flex-col space-y-1.5 pt-2">
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full Name*"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="Email Address*"
                   className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
                 />
               </div>
-            )}
 
-            <div className="flex flex-col space-y-1.5">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email Address*"
-                className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
-              />
-            </div>
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 bg-[#f97316] hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition active:scale-95 shadow-md shadow-orange-500/10 mt-4 flex items-center justify-center"
+              >
+                {isLoading ? 'Sending...' : 'Send Reset Link'}
+              </button>
 
-            <div className="flex flex-col space-y-1.5">
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••"
-                className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
-              />
-            </div>
+              <div className="text-center pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    setShowForgotPassword(false);
+                  }}
+                  className="text-orange-500 hover:underline text-xs"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-bold text-slate-700">
+              {error && (
+                <div className="flex items-center space-x-3 p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-sm">
+                  <ShieldAlert size={16} className="flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
-            {!isLogin && (
-              <>
+              {!isLogin && (
                 <div className="flex flex-col space-y-1.5">
                   <input
                     type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Phone Number"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Full Name*"
                     className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
                   />
                 </div>
+              )}
 
-                <div className="flex flex-col space-y-1.5">
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
-                    className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
-                  />
-                </div>
-              </>
-            )}
+              <div className="flex flex-col space-y-1.5">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email Address*"
+                  className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                />
+              </div>
 
-            {/* Links Row */}
-            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 pt-2">
-              <a href="#" className="text-orange-500 hover:underline">Forgot password?</a>
-              <span>
-                {isLogin ? (
-                  <>
-                    don't have an account?{' '}
-                    <span 
-                      onClick={() => setIsLogin(false)} 
-                      className="text-orange-500 hover:underline cursor-pointer font-extrabold"
-                    >
-                      Click here
-                    </span>{' '}
-                    to signup
-                  </>
-                ) : (
-                  <>
-                    already have an account?{' '}
-                    <span 
-                      onClick={() => setIsLogin(true)} 
-                      className="text-orange-500 hover:underline cursor-pointer font-extrabold"
-                    >
-                      Click here
-                    </span>{' '}
-                    to login
-                  </>
-                )}
-              </span>
-            </div>
+              <div className="flex flex-col space-y-1.5">
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••"
+                  className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                />
+              </div>
 
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 bg-[#f97316] hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition active:scale-95 shadow-md shadow-orange-500/10 mt-4 flex items-center justify-center"
-            >
-              {isLoading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}
-            </button>
+              {!isLogin && (
+                <>
+                  <div className="flex flex-col space-y-1.5">
+                    <input
+                      type="text"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Phone Number"
+                      className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                    />
+                  </div>
 
-          </form>
+                  <div className="flex flex-col space-y-1.5">
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="City"
+                      className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-850 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Links Row */}
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    setForgotEmail(email);
+                    setShowForgotPassword(true);
+                  }}
+                  className="text-orange-500 hover:underline"
+                >
+                  Forgot password?
+                </button>
+                <span>
+                  {isLogin ? (
+                    <>
+                      don't have an account?{' '}
+                      <span 
+                        onClick={() => setIsLogin(false)} 
+                        className="text-orange-500 hover:underline cursor-pointer font-extrabold"
+                      >
+                        Click here
+                      </span>{' '}
+                      to signup
+                    </>
+                  ) : (
+                    <>
+                      already have an account?{' '}
+                      <span 
+                        onClick={() => setIsLogin(true)} 
+                        className="text-orange-500 hover:underline cursor-pointer font-extrabold"
+                      >
+                        Click here
+                      </span>{' '}
+                      to login
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3 bg-[#f97316] hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition active:scale-95 shadow-md shadow-orange-500/10 mt-4 flex items-center justify-center"
+              >
+                {isLoading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
 

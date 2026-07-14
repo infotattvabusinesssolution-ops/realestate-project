@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Home, Mail, Lock, Eye, EyeOff, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { forgotPasswordAPI } from '../../api/api';
 
 export default function LoginForm({ role, themeClass, title, subtitle, bannerImage, bannerTitle, bannerDesc }) {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ export default function LoginForm({ role, themeClass, title, subtitle, bannerIma
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
 
   // Theme-specific styles config
   const themeStyles = {
@@ -99,6 +102,41 @@ export default function LoginForm({ role, themeClass, title, subtitle, bannerIma
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!forgotEmail.trim()) {
+      setError('Email Address is required.');
+      toast.error('Email Address is required.');
+      return;
+    }
+
+    if (!validateEmail(forgotEmail.trim())) {
+      setError('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await forgotPasswordAPI(forgotEmail.trim());
+      setIsLoading(false);
+      toast.success(res.data?.message || 'Password reset link sent successfully!');
+      
+      if (res.data?.previewUrl) {
+        console.log('Ethereal preview URL:', res.data.previewUrl);
+      }
+      
+      setShowForgotPassword(false);
+    } catch (err) {
+      setIsLoading(false);
+      const errMsg = err.response?.data?.message || err || 'Failed to send password reset email.';
+      setError(errMsg);
+      toast.error(errMsg);
+    }
+  };
+
   // Populate mock credentials for testing ease
   const handleFillCredentials = () => {
     if (role === 'admin') {
@@ -139,93 +177,168 @@ export default function LoginForm({ role, themeClass, title, subtitle, bannerIma
                 Estacy<span className={style.text}>.</span>
               </span>
             </Link>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{title}</h1>
-            <p className="text-slate-500">{subtitle}</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              {showForgotPassword ? 'Reset Password' : title}
+            </h1>
+            <p className="text-slate-500">
+              {showForgotPassword ? "Enter your email address and we'll send you a link to reset your password." : subtitle}
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="flex items-center space-x-3 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100 text-sm animate-shake">
-                <ShieldAlert size={18} className="flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Email Address</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <Mail size={18} />
+          {showForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              {error && (
+                <div className="flex items-center space-x-3 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100 text-sm animate-shake">
+                  <ShieldAlert size={18} className="flex-shrink-0" />
+                  <span>{error}</span>
                 </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@estacy.com"
-                  className={`w-full bg-white text-slate-900 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${style.borderFocus}`}
-                />
-              </div>
-            </div>
+              )}
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-slate-700">Password</label>
-                <a href="#" className={`text-xs font-semibold hover:underline ${style.text}`}>
-                  Forgot password?
-                </a>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <Lock size={18} />
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <Mail size={18} />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="name@estacy.com"
+                    className={`w-full bg-white text-slate-900 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${style.borderFocus}`}
+                  />
                 </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className={`w-full bg-white text-slate-900 border border-slate-200 rounded-xl pl-11 pr-11 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${style.borderFocus}`}
-                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 shadow-lg shadow-slate-200 flex items-center justify-center space-x-2 ${style.btn} ${
+                  isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <span>Send Reset Link</span>
+                )}
+              </button>
+
+              <div className="text-center pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  onClick={() => {
+                    setError('');
+                    setShowForgotPassword(false);
+                  }}
+                  className={`text-xs font-bold hover:underline ${style.text}`}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  Back to Sign In
                 </button>
               </div>
-            </div>
+            </form>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="flex items-center space-x-3 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100 text-sm animate-shake">
+                    <ShieldAlert size={18} className="flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 shadow-lg shadow-slate-200 flex items-center justify-center space-x-2 ${style.btn} ${
-                isLoading ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Authenticating...</span>
-                </>
-              ) : (
-                <span>Sign In</span>
-              )}
-            </button>
-          </form>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700">Email Address</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                      <Mail size={18} />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@estacy.com"
+                      className={`w-full bg-white text-slate-900 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${style.borderFocus}`}
+                    />
+                  </div>
+                </div>
 
-          {/* Quick Mock Login */}
-          <div className="pt-6 border-t border-slate-200/80">
-            <button
-              type="button"
-              onClick={handleFillCredentials}
-              className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200/80 text-slate-600 rounded-xl text-xs font-bold transition-all border border-dashed border-slate-300 flex items-center justify-center space-x-2"
-            >
-              <span>Auto-fill Mock Demo Credentials</span>
-            </button>
-          </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-bold text-slate-700">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setError('');
+                        setForgotEmail(email);
+                        setShowForgotPassword(true);
+                      }}
+                      className={`text-xs font-semibold hover:underline ${style.text}`}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                      <Lock size={18} />
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full bg-white text-slate-900 border border-slate-200 rounded-xl pl-11 pr-11 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${style.borderFocus}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`w-full text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 shadow-lg shadow-slate-200 flex items-center justify-center space-x-2 ${style.btn} ${
+                    isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span>Authenticating...</span>
+                    </>
+                  ) : (
+                    <span>Sign In</span>
+                  )}
+                </button>
+              </form>
+
+              {/* Quick Mock Login */}
+              <div className="pt-6 border-t border-slate-200/80">
+                <button
+                  type="button"
+                  onClick={handleFillCredentials}
+                  className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200/80 text-slate-600 rounded-xl text-xs font-bold transition-all border border-dashed border-slate-300 flex items-center justify-center space-x-2"
+                >
+                  <span>Auto-fill Mock Demo Credentials</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
